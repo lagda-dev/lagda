@@ -1,0 +1,19 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "@lagda/auth": "0.1.0",
+    "@lagda/server": "0.1.0",
+    "@lagda/web": "0.1.0",
+    "@lagda/auth-contract": "0.1.0",
+    "@lagda/connectors": "0.1.0",
+    "@lagda/core": "0.1.0",
+    "@lagda/db": "0.1.0",
+    "@lagda/jobs": "0.1.0",
+    "@lagda/logger": "0.1.0",
+    "@lagda/observability": "0.1.0",
+    "@lagda/templating": "0.1.0",
+    "@lagda/ui": "0.1.0"
+  },
+  "changesets": []
+}
