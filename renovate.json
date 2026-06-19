@@ -1,12 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":dependencyDashboard",
-    ":semanticCommits",
-    "group:monorepos",
-    "helpers:pinGitHubActionDigests"
-  ],
+  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits", "group:monorepos", "helpers:pinGitHubActionDigests"],
   "labels": ["dependencies"],
   "packageRules": [
     {

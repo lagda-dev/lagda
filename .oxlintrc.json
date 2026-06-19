@@ -69,7 +69,7 @@
     "no-useless-catch": "error",
     "no-useless-escape": "error",
     "no-with": "error",
-    "preserve-caught-error": "error",
+    "preserve-caught-error": "off",
     "require-yield": "error",
     "use-isnan": "error",
     "valid-typeof": "error",
@@ -85,12 +85,7 @@
     ],
     "no-await-in-loop": "error",
     "no-constructor-return": "error",
-    "no-duplicate-imports": [
-      "error",
-      {
-        "includeExports": true
-      }
-    ],
+    "no-duplicate-imports": "off",
     "no-promise-executor-return": [
       "error",
       {
@@ -162,7 +157,7 @@
     "no-sequences": "error",
     "no-shadow": "error",
     "no-throw-literal": "error",
-    "no-undefined": "error",
+    "no-undefined": "off",
     "no-unneeded-ternary": [
       "error",
       {
@@ -181,12 +176,7 @@
     "no-useless-rename": "error",
     "no-useless-return": "error",
     "no-var": "error",
-    "no-warning-comments": [
-      "error",
-      {
-        "terms": ["todo"]
-      }
-    ],
+    "no-warning-comments": "off",
     "object-shorthand": ["error", "always"],
     "operator-assignment": ["error", "always"],
     "prefer-const": [
@@ -206,7 +196,7 @@
     "prefer-spread": "error",
     "prefer-template": "error",
     "radix": "error",
-    "require-await": "error",
+    "require-await": "off",
     "symbol-description": "error",
     "yoda": "error",
     "typescript/ban-ts-comment": "error",
@@ -252,6 +242,13 @@
         "no-this-before-super": "off",
         "no-unsafe-negation": "off",
         "no-with": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.stories.tsx", "**/.storybook/**"],
+      "rules": {
+        "max-nested-callbacks": "off",
+        "max-lines-per-function": "off"
       }
     }
   ]

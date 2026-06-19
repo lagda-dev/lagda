@@ -1,13 +1,9 @@
 {
   "name": "lagda",
   "version": "0.1.0",
-  "description": "Open-source, self-hostable email-signature management platform",
   "private": true,
+  "description": "Open-source, self-hostable email-signature management platform",
   "license": "AGPL-3.0-only",
-  "packageManager": "pnpm@9.12.0",
-  "engines": {
-    "node": ">=20"
-  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -31,5 +27,9 @@
     "turbo": "^2.9.6",
     "typescript": "^5.6.0",
     "vitest": "^1.6.0"
-  }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.12.0"
 }
