@@ -8,7 +8,9 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import { RequireAuth } from "./auth/RequireAuth"
 import { RequireRole } from "./auth/RequireRole"
 import { AppShell } from "./components/AppShell"
+import { AuditEventsPage } from "./pages/AuditEventsPage"
 import { DashboardPage } from "./pages/DashboardPage"
+import { EmployeesPage } from "./pages/EmployeesPage"
 import { SettingsPage } from "./pages/SettingsPage"
 import { LoginPage } from "./pages/auth/LoginPage"
 import { VerifyOtpPage } from "./pages/auth/VerifyOtpPage"
@@ -29,8 +31,15 @@ const router = createBrowserRouter([
         children: [
           { path: "/", element: <DashboardPage /> },
           {
+            element: <RequireRole permission={PERMISSIONS.READ_EMPLOYEES} />,
+            children: [{ path: "/employees", element: <EmployeesPage /> }],
+          },
+          {
             element: <RequireRole permission={PERMISSIONS.MANAGE_ORG} />,
-            children: [{ path: "/settings", element: <SettingsPage /> }],
+            children: [
+              { path: "/audit-events", element: <AuditEventsPage /> },
+              { path: "/settings", element: <SettingsPage /> },
+            ],
           },
         ],
       },

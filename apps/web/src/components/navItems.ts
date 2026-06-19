@@ -23,6 +23,7 @@ const NAV_CATALOGUE: readonly AppNavItem[] = [
   { label: "Entities", href: "/entities", permission: PERMISSIONS.MANAGE_ENTITIES },
   { label: "Members", href: "/members", permission: PERMISSIONS.MANAGE_MEMBERS },
   { label: "Tokens", href: "/tokens", permission: PERMISSIONS.MANAGE_TOKENS },
+  { label: "Audit events", href: "/audit-events", permission: PERMISSIONS.MANAGE_ORG },
   { label: "Settings", href: "/settings", permission: PERMISSIONS.MANAGE_ORG },
 ] as const
 
