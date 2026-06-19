@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const employeesGet = vi.fn()
 const synchronizationsPost = vi.fn()
 const synchronizationsGet = vi.fn()
+const templatesPost = vi.fn()
 
 vi.mock("../client", () => ({
   api: {
@@ -20,6 +21,7 @@ vi.mock("../client", () => ({
           $get: (...args: unknown[]) => synchronizationsGet(...args),
           $post: (...args: unknown[]) => synchronizationsPost(...args),
         },
+        templates: { $post: (...args: unknown[]) => templatesPost(...args) },
       },
     },
   },
@@ -27,6 +29,7 @@ vi.mock("../client", () => ({
 
 import { fetchEmployeesList } from "../resources/employees"
 import { useCreateSynchronization, useSynchronizationsList } from "../resources/synchronizations"
+import { useCreateTemplate } from "../resources/templates"
 import { ApiError } from "../fetchJson"
 
 const okResponse = <Body,>(body: Body) => ({ ok: true, status: 200, json: async () => body })
@@ -120,5 +123,28 @@ describe("useCreateSynchronization", () => {
     // Assert
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["synchronizations"] })
+  })
+})
+
+describe("useCreateTemplate", () => {
+  beforeEach(() => {
+    templatesPost.mockReset()
+  })
+
+  it("posts the create body and invalidates the templates query key on success", async () => {
+    // Arrange
+    const created = { id: "tpl-1", entityId: "ent-1", name: "Sales" }
+    templatesPost.mockResolvedValue(okResponse(created))
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries")
+
+    // Act
+    const { result } = renderHook(() => useCreateTemplate(), { wrapper: renderWithClient(client) })
+    result.current.mutate({ entityId: "ent-1", name: "Sales", mjmlSource: "<mjml></mjml>" } as never)
+
+    // Assert
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(templatesPost).toHaveBeenCalledWith({ json: { entityId: "ent-1", name: "Sales", mjmlSource: "<mjml></mjml>" }, header: {} })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["templates"] })
   })
 })

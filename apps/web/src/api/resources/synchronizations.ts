@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query"
 import type { InferRequestType, InferResponseType } from "hono/client"
 import { api } from "../client"
 import { fetchJson } from "../fetchJson"
+import { noIdempotencyHeader } from "./mutationHeaders"
 import { queryKeys } from "../queryKeys"
 import type { CursorListParams } from "./listParams"
 import { toListQuery } from "./listParams"
@@ -31,10 +32,6 @@ const fetchDeploymentsList = async (synchronizationId: string, params: CursorLis
     `list deployments for synchronization ${synchronizationId}`,
     await api.api.v1.synchronizations[":id"].deployments.$get({ param: { id: synchronizationId }, query: toListQuery(params) }),
   )
-
-// The optional `Idempotency-Key` header every POST accepts (§4). The server treats it as optional, but
-// the typed client still expects the header object to be present, so we always pass an empty one.
-const noIdempotencyHeader = { header: {} } as const
 
 // Enqueue a new synchronization run. The server answers 202 with the accepted run id + status.
 const createSynchronization = async (input: CreateSynchronizationInput): Promise<SynchronizationAccepted> => {
