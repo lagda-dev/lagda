@@ -1,0 +1,35 @@
+{
+  "name": "@lagda/server",
+  "version": "0.1.0",
+  "description": "Lagda application monolith — Hono API + SPA host",
+  "license": "AGPL-3.0-only",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/app.ts"
+  },
+  "scripts": {
+    "build": "tsup src/server.ts --format esm --target node20 --clean",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.2",
+    "@hono/zod-openapi": "^0.16.4",
+    "@hono/zod-validator": "^0.4.1",
+    "@lagda/core": "workspace:*",
+    "@scalar/hono-api-reference": "^0.5.172",
+    "hono": "^4.6.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^1.6.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.0",
+    "vitest": "^1.6.0"
+  }
+}
