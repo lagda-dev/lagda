@@ -11,13 +11,17 @@ export type OtpMessage = {
 export type OtpSender = (message: OtpMessage) => Promise<void>
 
 // TODO(email): replace this logging stub with a real transactional email provider (e.g. Resend / SES).
-// For now we only write the delivery intent to stdout — never the OTP value alongside the email in
-// production logs (§8 no-PII), so we redact the code here and surface only that a send was attempted.
+// Production NEVER logs the code or the full address (§8 no-PII) — it only records that a send was
+// attempted. In development there is no email transport, so we print the full address and the code in
+// cleartext to stdout, which is the only way to complete a local OTP sign-in.
 export const createLoggingOtpSender =
   (write: (line: string) => void = (line) => process.stdout.write(line)): OtpSender =>
-  async ({ email, type }) => {
-    const redactedEmail = redactEmail(email)
-    write(`otp.send type=${type} to=${redactedEmail} otp=<redacted>\n`)
+  async ({ email, otp, type }) => {
+    if (process.env.NODE_ENV === "production") {
+      write(`otp.send type=${type} to=${redactEmail(email)} otp=<redacted>\n`)
+      return
+    }
+    write(`otp.send type=${type} to=${email} otp=${otp}  (dev only — shown so you can sign in locally)\n`)
   }
 
 // Reduce an email to a non-identifying shape (first char + domain) so logs stay debuggable without PII.

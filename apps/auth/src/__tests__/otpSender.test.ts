@@ -1,9 +1,14 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { createLoggingOtpSender } from "../otpSender"
 
 describe("createLoggingOtpSender", () => {
-  it("writes a redacted send line that never leaks the OTP or full email", async () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it("never leaks the OTP or the full email in production", async () => {
     // Arrange
+    vi.stubEnv("NODE_ENV", "production")
     const write = vi.fn()
     const sender = createLoggingOtpSender(write)
 
@@ -19,8 +24,25 @@ describe("createLoggingOtpSender", () => {
     expect(line).not.toContain("alice@example.com")
   })
 
-  it("redacts a malformed email to a non-identifying placeholder", async () => {
+  it("prints the OTP and full email in development so local sign-in is possible", async () => {
     // Arrange
+    vi.stubEnv("NODE_ENV", "development")
+    const write = vi.fn()
+    const sender = createLoggingOtpSender(write)
+
+    // Act
+    await sender({ email: "alice@example.com", otp: "123456", type: "sign-in" })
+
+    // Assert
+    const line = write.mock.calls[0]?.[0] as string
+    expect(line).toContain("type=sign-in")
+    expect(line).toContain("alice@example.com")
+    expect(line).toContain("otp=123456")
+  })
+
+  it("redacts a malformed email to a non-identifying placeholder in production", async () => {
+    // Arrange
+    vi.stubEnv("NODE_ENV", "production")
     const write = vi.fn()
     const sender = createLoggingOtpSender(write)
 
