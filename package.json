@@ -1,0 +1,35 @@
+{
+  "name": "lagda",
+  "version": "0.1.0",
+  "description": "Open-source, self-hostable email-signature management platform",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "check": "turbo run lint typecheck test build",
+    "changeset": "changeset",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.9",
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "@types/node": "^20.16.0",
+    "husky": "^9.1.6",
+    "oxfmt": "^0.46.0",
+    "oxlint": "^1.61.0",
+    "turbo": "^2.9.6",
+    "typescript": "^5.6.0",
+    "vitest": "^1.6.0"
+  }
+}

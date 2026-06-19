@@ -1,0 +1,21 @@
+node_modules
+dist
+build
+coverage
+storybook-static
+.turbo
+.vite
+.next
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
+
+# OS / editor
+.DS_Store
+*.log
+
+# Test/build artifacts
+playwright-report
+test-results
