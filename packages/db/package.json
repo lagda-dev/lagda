@@ -1,0 +1,31 @@
+{
+  "name": "@lagda/db",
+  "version": "0.1.0",
+  "description": "Lagda dialect-pluggable Kysely data layer, typed schema, and file-based migrations",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/db.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "migrate": "tsx src/migrate.ts",
+    "codegen": "kysely-codegen --out-file src/database.d.ts"
+  },
+  "dependencies": {
+    "@lagda/core": "workspace:*",
+    "kysely": "^0.27.4",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10",
+    "@vitest/coverage-v8": "^1.6.0",
+    "kysely-codegen": "^0.17.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.0",
+    "vitest": "^1.6.0"
+  }
+}
