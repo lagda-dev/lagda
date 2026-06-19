@@ -14,7 +14,7 @@ description: >-
 # Lagda — Engineering Conventions
 
 Lagda is an open-source, self-hostable **email-signature management platform** (an
-open-core email-signature platform). This skill is the single source of
+open-core). This skill is the single source of
 truth for _how_ we build it. Follow it on every change. For step-by-step recipes, defer to
 the task skills:
 
@@ -198,7 +198,7 @@ Code reads like a story; each function explains one part of it.
 ## 12. Documentation
 
 - The OpenAPI spec is **generated from `@hono/zod-openapi`** — the committed `openapi.json` is the single source of truth, served via **Scalar** at `/api/docs`. The CI **drift gate** fails on a stale `openapi.json`, so endpoint changes update the docs in the same PR.
-- Guides are markdown in `/docs` (include the **Database** section: default Postgres, supported dialects, external-DB setup, Postgres-only caveats). Mintlify migration is a later step.
+- Guides are markdown in `/docs` (include the **Database** section: Postgres setup, configuration, and external-DB connection). Mintlify migration is a later step.
 
 ---
 

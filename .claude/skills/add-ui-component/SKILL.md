@@ -51,7 +51,7 @@ imports every primitive from `@lagda/ui` — never duplicate primitives in
 
 - [ ] Component lives in `packages/ui` (shadcn `new-york` / `neutral`), no
       `apps/web` duplication
-- [ ] design tokens via shared Tailwind preset + `cn`; 1px borders, small
+- [ ] Design tokens via shared Tailwind preset + `cn`; 1px borders, small
       radius, Inter, neutral grays
 - [ ] Code style: const+arrow, no semicolons, double quotes, `import type`
 - [ ] Exported from `src/ui.ts`
