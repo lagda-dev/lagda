@@ -1,0 +1,25 @@
+{
+  "name": "@lagda/logger",
+  "version": "0.1.0",
+  "description": "Lagda structured pino logging with PII/secret redaction and request-id/trace correlation",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/logger.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@lagda/core": "workspace:*",
+    "pino": "^9.5.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^1.6.0",
+    "typescript": "^5.6.0",
+    "vitest": "^1.6.0"
+  }
+}
