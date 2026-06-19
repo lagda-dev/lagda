@@ -1,9 +1,13 @@
 name: Publish images
 
-# Build and push the deployable container images to the GitHub Container Registry
-# when a GitHub Release is published (and on manual dispatch). Releases are gated
-# upstream (see release flow); this job only packages what was released.
+# Build and push the deployable container images to the GitHub Container Registry.
+# Two channels:
+#   - push to main  → rolling "edge" + "sha-<short>" tags (preview of trunk).
+#   - GitHub Release → "latest" (stable only) + SemVer tags (gated upstream; see release flow).
+# Manual dispatch is also supported.
 on:
+  push:
+    branches: [main]
   release:
     types: [published]
   workflow_dispatch:
@@ -42,6 +46,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=edge,enable={{is_default_branch}}
             type=sha
             type=raw,value=latest,enable=${{ github.event_name == 'release' && github.event.release.prerelease == false }}
       - name: Build and push
