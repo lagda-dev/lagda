@@ -1,30 +1,30 @@
 import type { AppType } from "@lagda/server"
 import { hc } from "hono/client"
-import { BEARER_TOKEN_STORAGE_KEY, fetchBearerToken } from "../auth/authClient"
+import { fetchBearerToken } from "../auth/authClient"
 
 // The typed Hono RPC client for the application server (apps/server on :3000, proxied at "/api" in dev).
 // Unlike the auth client, the app server runs NO Better Auth — it is a stateless resource server that
-// verifies the bearer JWT against the auth service's JWKS. So every request here must carry the JWT as
-// `Authorization: Bearer <token>` (token flow per §1).
+// verifies a JWKS-signed JWT against the auth service's JWKS. That JWT is the one minted by the jwt
+// plugin via `authClient.token()` — NOT Better Auth's session token — so every request here carries it
+// as `Authorization: Bearer <token>` (token flow per §1).
 
-const readCachedBearerToken = (): string | null => {
-  try {
-    return localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)
-  } catch {
-    return null
-  }
-}
+// A short in-memory cache for the minted JWT so we don't hit the auth service on every API call. The
+// JWT outlives this window comfortably (Better Auth's default expiry is minutes), so a brief cache is
+// safe; on expiry we simply mint a fresh one.
+const JWT_CACHE_TTL_MS = 60_000
+let cachedJwt: { token: string; expiresAt: number } | null = null
 
-// Resolve a bearer token for an outgoing request: reuse the cached one captured during auth flows, and
-// fall back to minting a fresh JWT via the jwt client plugin when the cache is empty. Failures bubble
-// up with context — an unauthenticated request will be rejected by the server (deny-by-default §6).
-const resolveBearerToken = async (): Promise<string | null> => {
-  const cachedToken = readCachedBearerToken()
-  if (cachedToken !== null && cachedToken.length > 0) return cachedToken
+// Resolve the application JWT for an outgoing request: reuse the in-memory token while fresh, otherwise
+// mint a new one via the jwt client plugin. Failures degrade to an unauthenticated request, which the
+// server rejects (deny-by-default §6).
+const resolveBearerToken = async (now: number): Promise<string | null> => {
+  if (cachedJwt !== null && cachedJwt.expiresAt > now) return cachedJwt.token
   try {
-    return await fetchBearerToken()
+    const token = await fetchBearerToken()
+    cachedJwt = { token, expiresAt: now + JWT_CACHE_TTL_MS }
+    return token
   } catch {
-    // No session / token unavailable: send the request without a bearer and let the server enforce.
+    cachedJwt = null
     return null
   }
 }
@@ -32,7 +32,7 @@ const resolveBearerToken = async (): Promise<string | null> => {
 // A fetch wrapper that injects the bearer token before delegating to the platform fetch. Kept as a thin
 // boundary so the `hc<AppType>` typing below stays fully intact.
 const authorizedFetch: typeof fetch = async (input, init) => {
-  const bearerToken = await resolveBearerToken()
+  const bearerToken = await resolveBearerToken(Date.now())
   const headers = new Headers(init?.headers)
   if (bearerToken !== null) headers.set("Authorization", `Bearer ${bearerToken}`)
   return fetch(input, { ...init, headers })

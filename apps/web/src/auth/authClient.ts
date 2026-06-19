@@ -66,6 +66,5 @@ export const fetchBearerToken = async (): Promise<string> => {
   const { data, error } = await authClient.token()
   if (error !== null) throw new Error(`Failed to obtain bearer token: ${error.message ?? "unknown error"}`)
   if (data === null) throw new Error("Failed to obtain bearer token: empty response")
-  storeBearerToken(data.token)
   return data.token
 }
