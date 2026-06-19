@@ -101,24 +101,84 @@ export type CreateSyncRunInput = {
   createdBy: string
 }
 
+// --- Write inputs (lean, API-facing) ---
+// Each write input carries the caller's `orgId` so the data layer can enforce tenant scoping (a
+// template/assignment is reachable only through an entity in the caller's org). `null` results from a
+// write mean "not found in this tenant" — the handler turns that into a 404.
+
+// Create a template under an entity the caller's org owns. `mjmlSource` is the MJML body (§4).
+export type CreateTemplateInput = {
+  orgId: string
+  entityId: string
+  name: string
+  mjmlSource: string
+}
+
+// Patch a template's editable fields; only the provided fields change (immutable partial update).
+export type UpdateTemplateInput = {
+  orgId: string
+  id: string
+  name?: string
+  mjmlSource?: string
+}
+
+// Bind a template to a target audience under an entity the caller's org owns.
+export type CreateAssignmentInput = {
+  orgId: string
+  entityId: string
+  templateId: string
+  target: Record<string, unknown>
+}
+
+// Create an entity (brand/business unit) under the caller's org.
+export type CreateEntityInput = {
+  orgId: string
+  name: string
+  slug: string
+}
+
+// Patch an entity's editable fields; only the provided fields change.
+export type UpdateEntityInput = {
+  orgId: string
+  id: string
+  name?: string
+  slug?: string
+}
+
+// Patch the caller's own organization (settings/name). Scoped to `id === orgId` in the data layer so
+// one tenant cannot mutate another.
+export type UpdateOrganizationInput = {
+  orgId: string
+  id: string
+  name?: string
+}
+
 // --- The contract ---
 // Lists take a validated `PaginationQuery` and return a `Page`. Detail reads return `null` when the
 // resource does not exist (the handler translates that to a 404 envelope).
 export type Repository = {
   listOrganizations: (orgId: string, query: PaginationQuery) => Promise<Page<OrganizationRecord>>
   getOrganization: (orgId: string, id: string) => Promise<OrganizationRecord | null>
+  updateOrganization: (input: UpdateOrganizationInput) => Promise<OrganizationRecord | null>
 
   listEntities: (orgId: string, query: PaginationQuery) => Promise<Page<EntityRecord>>
   getEntity: (orgId: string, id: string) => Promise<EntityRecord | null>
+  createEntity: (input: CreateEntityInput) => Promise<EntityRecord>
+  updateEntity: (input: UpdateEntityInput) => Promise<EntityRecord | null>
 
   listEmployees: (orgId: string, query: PaginationQuery) => Promise<Page<EmployeeRecord>>
   getEmployee: (orgId: string, id: string) => Promise<EmployeeRecord | null>
 
   listTemplates: (orgId: string, query: PaginationQuery) => Promise<Page<TemplateRecord>>
   getTemplate: (orgId: string, id: string) => Promise<TemplateRecord | null>
+  createTemplate: (input: CreateTemplateInput) => Promise<TemplateRecord | null>
+  updateTemplate: (input: UpdateTemplateInput) => Promise<TemplateRecord | null>
+  deleteTemplate: (orgId: string, id: string) => Promise<boolean>
 
   listAssignments: (orgId: string, query: PaginationQuery) => Promise<Page<AssignmentRecord>>
   getAssignment: (orgId: string, id: string) => Promise<AssignmentRecord | null>
+  createAssignment: (input: CreateAssignmentInput) => Promise<AssignmentRecord | null>
+  deleteAssignment: (orgId: string, id: string) => Promise<boolean>
 
   listDepartments: (orgId: string, query: PaginationQuery) => Promise<Page<DepartmentRecord>>
   listRoles: (orgId: string, query: PaginationQuery) => Promise<Page<RoleRecord>>

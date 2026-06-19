@@ -9,7 +9,10 @@ import { recordQuery } from "../infrastructure/queryCounter"
 import type {
   AssignmentRecord,
   AuditEventRecord,
+  CreateAssignmentInput,
+  CreateEntityInput,
   CreateSyncRunInput,
+  CreateTemplateInput,
   DepartmentRecord,
   DeploymentRecord,
   EmployeeRecord,
@@ -20,6 +23,9 @@ import type {
   SyncEnqueuer,
   SyncRunRecord,
   TemplateRecord,
+  UpdateEntityInput,
+  UpdateOrganizationInput,
+  UpdateTemplateInput,
 } from "./types"
 
 // The typed Kysely client, derived from `@lagda/db`'s factory so the server needs no direct `kysely`
@@ -88,6 +94,20 @@ export const createKyselyRepository = (db: LagdaDatabase, recordDbQuery: RecordD
     return row ?? null
   }
 
+  // Update the caller's own org (settings/name). The `id !== orgId` guard means one tenant can never
+  // mutate another's organization even with a forged id. Only provided fields change.
+  const updateOrganization = async (input: UpdateOrganizationInput): Promise<OrganizationRecord | null> => {
+    if (input.id !== input.orgId) return null
+    recordQuery()
+    try {
+      const changes = input.name === undefined ? {} : { name: input.name }
+      const row = await db.updateTable("organizations").set(changes).where("id", "=", input.id).returning(["id", "name", "slug"]).executeTakeFirst()
+      return row ?? null
+    } catch (error) {
+      throw new Error(`Failed to update organization ${input.id}: ${getErrorMessage(error)}`)
+    }
+  }
+
   const listEntities = (orgId: string, query: PaginationQuery): Promise<Page<EntityRecord>> =>
     paginate({
       operation: "listEntities",
@@ -114,6 +134,42 @@ export const createKyselyRepository = (db: LagdaDatabase, recordDbQuery: RecordD
       .where("org_id", "=", orgId)
       .executeTakeFirst()
     return row ?? null
+  }
+
+  // Create an entity under the caller's org. `org_id` is taken from the trusted claims, never the
+  // body, so the new entity always lands in the caller's tenant.
+  const createEntity = async (input: CreateEntityInput): Promise<EntityRecord> => {
+    recordQuery()
+    try {
+      const row = await db
+        .insertInto("entities")
+        .values({ org_id: input.orgId, name: input.name, slug: input.slug, settings: JSON.stringify({}) })
+        .returning(["id", "org_id as organizationId", "name", "slug"])
+        .executeTakeFirstOrThrow()
+      return row
+    } catch (error) {
+      throw new Error(`Failed to create entity: ${getErrorMessage(error)}`)
+    }
+  }
+
+  // Update an entity scoped to the caller's org; a row outside the tenant matches nothing and returns
+  // null (a 404). Only provided fields change.
+  const updateEntity = async (input: UpdateEntityInput): Promise<EntityRecord | null> => {
+    recordQuery()
+    try {
+      const withName = input.name === undefined ? {} : { name: input.name }
+      const changes = input.slug === undefined ? withName : { ...withName, slug: input.slug }
+      const row = await db
+        .updateTable("entities")
+        .set(changes)
+        .where("id", "=", input.id)
+        .where("org_id", "=", input.orgId)
+        .returning(["id", "org_id as organizationId", "name", "slug"])
+        .executeTakeFirst()
+      return row ?? null
+    } catch (error) {
+      throw new Error(`Failed to update entity ${input.id}: ${getErrorMessage(error)}`)
+    }
   }
 
   const listEmployees = (orgId: string, query: PaginationQuery): Promise<Page<EmployeeRecord>> =>
@@ -192,6 +248,66 @@ export const createKyselyRepository = (db: LagdaDatabase, recordDbQuery: RecordD
     return row ?? null
   }
 
+  // Confirm an entity belongs to the caller's org before a write references it, so a forged
+  // `entityId` from another tenant cannot be targeted. Returns true when the entity is in the org.
+  const entityBelongsToOrg = async (orgId: string, entityId: string): Promise<boolean> => {
+    recordQuery()
+    const row = await db.selectFrom("entities").select("id").where("id", "=", entityId).where("org_id", "=", orgId).executeTakeFirst()
+    return row !== undefined
+  }
+
+  // Create a template under an entity the caller's org owns. When the entity is not in the tenant we
+  // return null (a 404) rather than inserting an orphan row in another org.
+  const createTemplate = async (input: CreateTemplateInput): Promise<TemplateRecord | null> => {
+    const isOwned = await entityBelongsToOrg(input.orgId, input.entityId)
+    if (!isOwned) return null
+    recordQuery()
+    try {
+      const row = await db
+        .insertInto("templates")
+        .values({ entity_id: input.entityId, name: input.name, mjml_source: input.mjmlSource })
+        .returning(["id", "entity_id as entityId", "name"])
+        .executeTakeFirstOrThrow()
+      return row
+    } catch (error) {
+      throw new Error(`Failed to create template: ${getErrorMessage(error)}`)
+    }
+  }
+
+  // Update a template scoped to the caller's org via its entity. A subquery restricts the matched row
+  // to entities in the tenant, so a template in another org matches nothing and returns null (404).
+  const updateTemplate = async (input: UpdateTemplateInput): Promise<TemplateRecord | null> => {
+    recordQuery()
+    try {
+      const withName = input.name === undefined ? {} : { name: input.name }
+      const changes = input.mjmlSource === undefined ? withName : { ...withName, mjml_source: input.mjmlSource }
+      const ownedEntityIds = db.selectFrom("entities").select("id").where("org_id", "=", input.orgId)
+      const row = await db
+        .updateTable("templates")
+        .set(changes)
+        .where("id", "=", input.id)
+        .where("entity_id", "in", ownedEntityIds)
+        .returning(["id", "entity_id as entityId", "name"])
+        .executeTakeFirst()
+      return row ?? null
+    } catch (error) {
+      throw new Error(`Failed to update template ${input.id}: ${getErrorMessage(error)}`)
+    }
+  }
+
+  // Delete a template scoped to the caller's org via its entity. Reports whether a row was removed so
+  // the handler can answer 204 (deleted) or 404 (nothing matched in this tenant).
+  const deleteTemplate = async (orgId: string, id: string): Promise<boolean> => {
+    recordQuery()
+    try {
+      const ownedEntityIds = db.selectFrom("entities").select("id").where("org_id", "=", orgId)
+      const result = await db.deleteFrom("templates").where("id", "=", id).where("entity_id", "in", ownedEntityIds).executeTakeFirst()
+      return result.numDeletedRows > 0n
+    } catch (error) {
+      throw new Error(`Failed to delete template ${id}: ${getErrorMessage(error)}`)
+    }
+  }
+
   const listAssignments = (orgId: string, query: PaginationQuery): Promise<Page<AssignmentRecord>> =>
     paginate({
       operation: "listAssignments",
@@ -220,6 +336,53 @@ export const createKyselyRepository = (db: LagdaDatabase, recordDbQuery: RecordD
       .where("entities.org_id", "=", orgId)
       .executeTakeFirst()
     return row === undefined ? null : { ...row, target: row.target as Record<string, unknown> }
+  }
+
+  // Confirm a template belongs to the caller's org (via its entity) before an assignment references
+  // it, mirroring the entity ownership check. Returns true when the template is in the org.
+  const templateBelongsToOrg = async (orgId: string, templateId: string): Promise<boolean> => {
+    recordQuery()
+    const row = await db
+      .selectFrom("templates")
+      .innerJoin("entities", "entities.id", "templates.entity_id")
+      .select("templates.id as id")
+      .where("templates.id", "=", templateId)
+      .where("entities.org_id", "=", orgId)
+      .executeTakeFirst()
+    return row !== undefined
+  }
+
+  // Create an assignment binding a template to a target under an entity, both owned by the caller's
+  // org. A forged entity or template from another tenant returns null (a 404) instead of inserting.
+  const createAssignment = async (input: CreateAssignmentInput): Promise<AssignmentRecord | null> => {
+    const isEntityOwned = await entityBelongsToOrg(input.orgId, input.entityId)
+    if (!isEntityOwned) return null
+    const isTemplateOwned = await templateBelongsToOrg(input.orgId, input.templateId)
+    if (!isTemplateOwned) return null
+    recordQuery()
+    try {
+      const row = await db
+        .insertInto("assignments")
+        .values({ entity_id: input.entityId, template_id: input.templateId, target: JSON.stringify(input.target) })
+        .returning(["id", "entity_id as entityId", "template_id as templateId", "target"])
+        .executeTakeFirstOrThrow()
+      return { ...row, target: row.target as Record<string, unknown> }
+    } catch (error) {
+      throw new Error(`Failed to create assignment: ${getErrorMessage(error)}`)
+    }
+  }
+
+  // Delete an assignment scoped to the caller's org via its entity. Reports whether a row was removed
+  // so the handler answers 204 (deleted) or 404 (nothing matched in this tenant).
+  const deleteAssignment = async (orgId: string, id: string): Promise<boolean> => {
+    recordQuery()
+    try {
+      const ownedEntityIds = db.selectFrom("entities").select("id").where("org_id", "=", orgId)
+      const result = await db.deleteFrom("assignments").where("id", "=", id).where("entity_id", "in", ownedEntityIds).executeTakeFirst()
+      return result.numDeletedRows > 0n
+    } catch (error) {
+      throw new Error(`Failed to delete assignment ${id}: ${getErrorMessage(error)}`)
+    }
   }
 
   const listDepartments = (orgId: string, query: PaginationQuery): Promise<Page<DepartmentRecord>> =>
@@ -383,14 +546,22 @@ export const createKyselyRepository = (db: LagdaDatabase, recordDbQuery: RecordD
   return {
     listOrganizations,
     getOrganization,
+    updateOrganization,
     listEntities,
     getEntity,
+    createEntity,
+    updateEntity,
     listEmployees,
     getEmployee,
     listTemplates,
     getTemplate,
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
     listAssignments,
     getAssignment,
+    createAssignment,
+    deleteAssignment,
     listDepartments,
     listRoles,
     listAuditEvents,
