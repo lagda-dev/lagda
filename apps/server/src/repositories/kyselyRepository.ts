@@ -1,6 +1,7 @@
 import { createDatabase } from "@lagda/db"
 import type { Queue } from "@lagda/jobs"
 import { SYNC_DIRECTORY_JOB } from "@lagda/jobs"
+import type { DbQuerySample } from "@lagda/observability"
 import { getErrorMessage } from "../infrastructure/getErrorMessage"
 import { fetchLimitFor, toPage } from "../infrastructure/pagination"
 import type { Page, PaginationQuery } from "../infrastructure/pagination"
@@ -33,29 +34,52 @@ type LagdaDatabase = ReturnType<typeof createDatabase>
 
 const ROLE_NAMES: readonly RoleRecord[] = [{ name: "owner" }, { name: "admin" }, { name: "user" }]
 
-// Build a keyset-paginated list over a table that has an org-scoping column reachable from `org_id`.
-// Returns one extra row so the page envelope can derive `nextCursor` without a count query.
-const paginate = async <TItem>(
-  query: PaginationQuery,
-  runRows: (limit: number, cursor: string | undefined) => Promise<TItem[]>,
-  toCursor: (item: TItem) => string,
-): Promise<Page<TItem>> => {
-  recordQuery()
-  const rows = await runRows(fetchLimitFor(query.limit), query.cursor)
-  return toPage(rows, query.limit, toCursor)
+const MILLISECONDS_PER_SECOND = 1000
+
+// An optional recorder for `db_query_duration_seconds` (§9). Defaults to a no-op so the repository
+// works without observability wired (tests, integration). `server.ts` passes the real recorder.
+type RecordDbQuery = (sample: DbQuerySample) => void
+const noopRecordDbQuery: RecordDbQuery = () => undefined
+
+// The service identity stamped on DB-query timing samples.
+const SERVICE_NAME = "lagda-server"
+
+// The inputs to a keyset-paginated list: the logical `operation` name (for the DB-latency metric),
+// the validated pagination query, the row fetcher, and how to derive a cursor from a row.
+type PaginateInput<TItem> = {
+  operation: string
+  query: PaginationQuery
+  runRows: (limit: number, cursor: string | undefined) => Promise<TItem[]>
+  toCursor: (item: TItem) => string
 }
 
-export const createKyselyRepository = (db: LagdaDatabase): Repository => {
+// Build a keyset-paginated list over a table that has an org-scoping column reachable from `org_id`.
+// Returns one extra row so the page envelope can derive `nextCursor` without a count query. Times the
+// list query under `operation` for the DB-latency dashboard (the dominant query path, §9 best-effort).
+const buildPaginate =
+  (recordDbQuery: RecordDbQuery) =>
+  async <TItem>({ operation, query, runRows, toCursor }: PaginateInput<TItem>): Promise<Page<TItem>> => {
+    recordQuery()
+    const startedAt = performance.now()
+    const rows = await runRows(fetchLimitFor(query.limit), query.cursor)
+    recordDbQuery({ service: SERVICE_NAME, operation, durationSeconds: (performance.now() - startedAt) / MILLISECONDS_PER_SECOND })
+    return toPage(rows, query.limit, toCursor)
+  }
+
+export const createKyselyRepository = (db: LagdaDatabase, recordDbQuery: RecordDbQuery = noopRecordDbQuery): Repository => {
+  const paginate = buildPaginate(recordDbQuery)
+
   const listOrganizations = (orgId: string, query: PaginationQuery): Promise<Page<OrganizationRecord>> =>
-    paginate(
+    paginate({
+      operation: "listOrganizations",
       query,
-      async (limit, cursor) => {
+      runRows: async (limit, cursor) => {
         let builder = db.selectFrom("organizations").select(["id", "name", "slug"]).where("id", "=", orgId).orderBy("id").limit(limit)
         if (cursor !== undefined) builder = builder.where("id", ">", cursor)
         return builder.execute()
       },
-      (org) => org.id,
-    )
+      toCursor: (org) => org.id,
+    })
 
   const getOrganization = async (orgId: string, id: string): Promise<OrganizationRecord | null> => {
     if (id !== orgId) return null
@@ -65,9 +89,10 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
   }
 
   const listEntities = (orgId: string, query: PaginationQuery): Promise<Page<EntityRecord>> =>
-    paginate(
+    paginate({
+      operation: "listEntities",
       query,
-      async (limit, cursor) => {
+      runRows: async (limit, cursor) => {
         let builder = db
           .selectFrom("entities")
           .select(["id", "org_id as organizationId", "name", "slug"])
@@ -77,8 +102,8 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
         if (cursor !== undefined) builder = builder.where("id", ">", cursor)
         return builder.execute()
       },
-      (entity) => entity.id,
-    )
+      toCursor: (entity) => entity.id,
+    })
 
   const getEntity = async (orgId: string, id: string): Promise<EntityRecord | null> => {
     recordQuery()
@@ -92,9 +117,10 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
   }
 
   const listEmployees = (orgId: string, query: PaginationQuery): Promise<Page<EmployeeRecord>> =>
-    paginate(
+    paginate({
+      operation: "listEmployees",
       query,
-      async (limit, cursor) => {
+      runRows: async (limit, cursor) => {
         let builder = db
           .selectFrom("employees")
           .innerJoin("entities", "entities.id", "employees.entity_id")
@@ -113,8 +139,8 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
         if (cursor !== undefined) builder = builder.where("employees.id", ">", cursor)
         return builder.execute()
       },
-      (employee) => employee.id,
-    )
+      toCursor: (employee) => employee.id,
+    })
 
   const getEmployee = async (orgId: string, id: string): Promise<EmployeeRecord | null> => {
     recordQuery()
@@ -137,9 +163,10 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
   }
 
   const listTemplates = (orgId: string, query: PaginationQuery): Promise<Page<TemplateRecord>> =>
-    paginate(
+    paginate({
+      operation: "listTemplates",
       query,
-      async (limit, cursor) => {
+      runRows: async (limit, cursor) => {
         let builder = db
           .selectFrom("templates")
           .innerJoin("entities", "entities.id", "templates.entity_id")
@@ -150,8 +177,8 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
         if (cursor !== undefined) builder = builder.where("templates.id", ">", cursor)
         return builder.execute()
       },
-      (template) => template.id,
-    )
+      toCursor: (template) => template.id,
+    })
 
   const getTemplate = async (orgId: string, id: string): Promise<TemplateRecord | null> => {
     recordQuery()
@@ -166,9 +193,10 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
   }
 
   const listAssignments = (orgId: string, query: PaginationQuery): Promise<Page<AssignmentRecord>> =>
-    paginate(
+    paginate({
+      operation: "listAssignments",
       query,
-      async (limit, cursor) => {
+      runRows: async (limit, cursor) => {
         let builder = db
           .selectFrom("assignments")
           .innerJoin("entities", "entities.id", "assignments.entity_id")
@@ -179,8 +207,8 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
         if (cursor !== undefined) builder = builder.where("assignments.id", ">", cursor)
         return builder.execute()
       },
-      (assignment) => assignment.id,
-    ).then((page) => ({ ...page, data: page.data.map((row) => ({ ...row, target: row.target as Record<string, unknown> })) }))
+      toCursor: (assignment) => assignment.id,
+    }).then((page) => ({ ...page, data: page.data.map((row) => ({ ...row, target: row.target as Record<string, unknown> })) }))
 
   const getAssignment = async (orgId: string, id: string): Promise<AssignmentRecord | null> => {
     recordQuery()
@@ -195,9 +223,10 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
   }
 
   const listDepartments = (orgId: string, query: PaginationQuery): Promise<Page<DepartmentRecord>> =>
-    paginate(
+    paginate({
+      operation: "listDepartments",
       query,
-      async (limit, cursor) => {
+      runRows: async (limit, cursor) => {
         let builder = db
           .selectFrom("employees")
           .innerJoin("entities", "entities.id", "employees.entity_id")
@@ -211,15 +240,16 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
         const rows = await builder.execute()
         return rows.map((row) => ({ name: row.name ?? "" }))
       },
-      (department) => department.name,
-    )
+      toCursor: (department) => department.name,
+    })
 
   const listRoles = async (_orgId: string, query: PaginationQuery): Promise<Page<RoleRecord>> => toPage(ROLE_NAMES, query.limit, (role) => role.name)
 
   const listAuditEvents = (orgId: string, query: PaginationQuery): Promise<Page<AuditEventRecord>> =>
-    paginate(
+    paginate({
+      operation: "listAuditEvents",
       query,
-      async (limit, cursor) => {
+      runRows: async (limit, cursor) => {
         let builder = db
           .selectFrom("audit_log")
           .select(["id", "actor", "action", "target", "created_at"])
@@ -230,13 +260,14 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
         const rows = await builder.execute()
         return rows.map((row) => ({ id: row.id, actor: row.actor, action: row.action, target: row.target, createdAt: row.created_at.toISOString() }))
       },
-      (event) => event.id,
-    )
+      toCursor: (event) => event.id,
+    })
 
   const listSyncRuns = (orgId: string, query: PaginationQuery): Promise<Page<SyncRunRecord>> =>
-    paginate(
+    paginate({
+      operation: "listSyncRuns",
       query,
-      async (limit, cursor) => {
+      runRows: async (limit, cursor) => {
         let builder = db
           .selectFrom("sync_runs")
           .select(["id", "org_id", "status", "template_id", "counts", "created_at"])
@@ -254,8 +285,8 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
           createdAt: row.created_at.toISOString(),
         }))
       },
-      (run) => run.id,
-    )
+      toCursor: (run) => run.id,
+    })
 
   const getSyncRun = async (orgId: string, id: string): Promise<SyncRunRecord | null> => {
     recordQuery()
@@ -325,9 +356,10 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
   }
 
   const listDeployments = (orgId: string, syncRunId: string, query: PaginationQuery): Promise<Page<DeploymentRecord>> =>
-    paginate(
+    paginate({
+      operation: "listDeployments",
       query,
-      async (limit, cursor) => {
+      runRows: async (limit, cursor) => {
         let builder = db
           .selectFrom("deployments")
           .innerJoin("sync_runs", "sync_runs.id", "deployments.sync_run_id")
@@ -345,8 +377,8 @@ export const createKyselyRepository = (db: LagdaDatabase): Repository => {
         if (cursor !== undefined) builder = builder.where("deployments.id", ">", cursor)
         return builder.execute()
       },
-      (deployment) => deployment.id,
-    )
+      toCursor: (deployment) => deployment.id,
+    })
 
   return {
     listOrganizations,

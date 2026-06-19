@@ -24,6 +24,8 @@
     "@lagda/core": "workspace:*",
     "@lagda/db": "workspace:*",
     "@lagda/jobs": "workspace:*",
+    "@lagda/logger": "workspace:*",
+    "@lagda/observability": "workspace:*",
     "@scalar/hono-api-reference": "^0.5.172",
     "hono": "^4.6.5",
     "hono-rate-limiter": "^0.4.2",

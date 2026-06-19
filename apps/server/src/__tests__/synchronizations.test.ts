@@ -95,6 +95,20 @@ describe("POST /api/v1/synchronizations", () => {
     expect(response.status).toBe(500)
   })
 
+  it("records a failed sync-run outcome when the run cannot be created (§9)", async () => {
+    // Arrange
+    const repository = createMockRepository()
+    repository.createSyncRun = vi.fn(async () => Promise.reject(new Error("insert failed")))
+    const recordSyncRun = vi.fn()
+    const app = createApp(buildDeps({ repository, recordSyncRun }))
+
+    // Act
+    await postSync(app, { target: { kind: "entity", entityId: "ent-1" } })
+
+    // Assert
+    expect(recordSyncRun).toHaveBeenCalledWith("failed")
+  })
+
   it("denies a plain user with 403 (deny by default)", async () => {
     // Arrange
     const app = createApp(buildDeps({ verifyToken: verifierFor("user") }))

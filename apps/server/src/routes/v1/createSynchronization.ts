@@ -42,6 +42,9 @@ export const createSynchronization = async (
     })
     return okOutcome({ id: syncRun.id, status: syncRun.status })
   } catch (error) {
+    // A run that never made it to the queue is a failed sync-run outcome (§9). Best-effort: the
+    // terminal succeeded/partial outcomes are recorded by the job worker when the run finishes.
+    deps.recordSyncRun?.("failed")
     return failOutcome("internal_error", `Failed to create synchronization: ${getErrorMessage(error)}`)
   }
 }
