@@ -14,6 +14,8 @@ export default defineConfig({
       "@lagda/core": resolveFromHere("../../packages/core/src/core.ts"),
       "@lagda/db": resolveFromHere("../../packages/db/src/db.ts"),
       "@lagda/jobs": resolveFromHere("../../packages/jobs/src/jobs.ts"),
+      "@lagda/logger": resolveFromHere("../../packages/logger/src/logger.ts"),
+      "@lagda/observability": resolveFromHere("../../packages/observability/src/observability.ts"),
     },
   },
   test: {
@@ -33,6 +35,9 @@ export default defineConfig({
         "src/**/__tests__/**",
         "src/**/*.test.ts",
         "src/server.ts",
+        // telemetry.ts: import-first OTel bootstrap; needs a live OTLP collector, so it is verified
+        // by the package's no-op path rather than unit tests here.
+        "src/telemetry.ts",
         "src/repositories/kyselyRepository.ts",
         "src/middleware/jwksVerifier.ts",
         "src/infrastructure/rateLimit.ts",

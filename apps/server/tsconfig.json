@@ -9,7 +9,9 @@
       "@lagda/auth-contract": ["../../packages/auth-contract/src/auth-contract.ts"],
       "@lagda/core": ["../../packages/core/src/core.ts"],
       "@lagda/db": ["../../packages/db/src/db.ts"],
-      "@lagda/jobs": ["../../packages/jobs/src/jobs.ts"]
+      "@lagda/jobs": ["../../packages/jobs/src/jobs.ts"],
+      "@lagda/logger": ["../../packages/logger/src/logger.ts"],
+      "@lagda/observability": ["../../packages/observability/src/observability.ts"]
     }
   },
   "include": ["src"]

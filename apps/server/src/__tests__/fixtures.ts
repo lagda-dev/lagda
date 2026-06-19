@@ -85,6 +85,7 @@ export const buildDeps = (overrides: Partial<ApiDependencies> = {}): ApiDependen
   enqueuer: overrides.enqueuer ?? createMockEnqueuer(),
   verifyToken: overrides.verifyToken ?? verifierFor("owner"),
   logger: overrides.logger,
+  recordSyncRun: overrides.recordSyncRun,
 })
 
 // The Authorization header value carrying an arbitrary opaque token; the mock verifier ignores its

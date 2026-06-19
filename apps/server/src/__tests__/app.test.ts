@@ -1,3 +1,5 @@
+import { createLogger } from "@lagda/logger"
+import { createMetrics } from "@lagda/observability"
 import { describe, expect, it } from "vitest"
 import { createApp } from "../app"
 import { buildDeps } from "./fixtures"
@@ -67,5 +69,47 @@ describe("createApp", () => {
 
     // Assert
     expect(response.status).toBe(429)
+  })
+
+  it("returns an empty 200 on GET /metrics when no metrics registry is injected", async () => {
+    // Arrange
+    const app = createApp(buildDeps())
+
+    // Act
+    const response = await app.request("/metrics")
+
+    // Assert
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe("")
+  })
+
+  it("serves Prometheus exposition on GET /metrics when metrics are injected", async () => {
+    // Arrange
+    const metrics = createMetrics()
+    const app = createApp(buildDeps(), { metrics })
+
+    // Act
+    const response = await app.request("/metrics")
+    const body = await response.text()
+
+    // Assert
+    expect(response.status).toBe(200)
+    expect(response.headers.get("content-type")).toBe(metrics.registry.contentType)
+    expect(body).toContain("http_requests_total")
+  })
+
+  it("records HTTP RED metrics and request-id correlation when observability is wired", async () => {
+    // Arrange
+    const metrics = createMetrics()
+    const logger = createLogger({ level: "error", name: "lagda-server" })
+    const app = createApp(buildDeps(), { metrics, logger })
+
+    // Act — exercise the probe so the matched route template is recorded, not the raw URL
+    const probe = await app.request("/healthz")
+    const exposition = await metrics.registry.metrics()
+
+    // Assert — the middleware ran (request id echoed) and the request was counted under the template
+    expect(probe.headers.get("x-request-id")).toBeTruthy()
+    expect(exposition).toContain('http_requests_total{service="lagda-server",method="GET",route="/healthz",status_code="200"} 1')
   })
 })

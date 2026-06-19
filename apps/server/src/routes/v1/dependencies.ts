@@ -1,16 +1,19 @@
 import type { Permission, TokenScope } from "@lagda/auth-contract"
+import type { SyncRunOutcome } from "@lagda/observability"
 import type { TokenVerifier } from "../../middleware/authContext"
 import type { Repository, SyncEnqueuer } from "../../repositories/types"
 import { requirePermission } from "../../middleware/requirePermission"
 
 // Everything the v1 routes need to be wired without reaching for globals (§DI): the data-access
-// repository, the job enqueuer, and the token verifier the RBAC middleware uses. The app builds this
-// once and threads it into each resource's route factory.
+// repository, the job enqueuer, the token verifier the RBAC middleware uses, and an optional sync-run
+// outcome recorder (§9 observability). The app builds this once and threads it into each resource's
+// route factory.
 export type ApiDependencies = {
   repository: Repository
   enqueuer: SyncEnqueuer
   verifyToken: TokenVerifier
   logger?: (entry: { operation: string; reason: string }) => void
+  recordSyncRun?: (outcome: SyncRunOutcome) => void
 }
 
 // A small helper that binds `requirePermission` to the shared verifier + logger so each route only
