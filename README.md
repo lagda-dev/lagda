@@ -4,52 +4,32 @@ Open-source, self-hostable email-signature management platform — [lagda.dev](h
 
 > **Status: Beta.** Pre-1.0 and under active development — APIs and schema may change between releases, which are published as `-beta` pre-releases.
 
-## Tech Stack
+## Quick start
 
-TypeScript · Node.js · [Hono](https://hono.dev) · [Vite](https://vitejs.dev) + React · [Kysely](https://kysely.dev) (PostgreSQL) · [Turborepo](https://turbo.build) · [pnpm](https://pnpm.io) · [oxlint + oxfmt](https://oxc.rs)
-
-## Prerequisites
-
-- **Node.js:** 20+ (`node --version`)
-- **pnpm:** 9+ (`npm install -g pnpm`)
-- **Docker:** for the full local stack (Postgres + services)
-
-## Setup
+The only thing you need is **Docker** — no Node, no pnpm.
 
 ```bash
-pnpm install
-cp .env.example .env   # fill in any required values
+git clone https://github.com/lagda-dev/lagda
+cd lagda
+docker compose up
 ```
 
-## Commands
+That boots PostgreSQL, runs the migrations, seeds the first organization + owner, and
+starts the app and auth services. Then open **http://localhost:3000** and sign in with the
+seeded owner:
 
-```bash
-pnpm dev          # run the app (web + API + auth)
-pnpm test         # run tests
-pnpm typecheck    # type check
-pnpm lint         # lint with oxlint
-pnpm format       # format with oxfmt
-pnpm check        # full verification: lint + typecheck + test + build
-```
+- **email:** `owner@lagda.local`
+- **password:** `lagda-dev-owner`
 
-## Local development
+(Dev-only defaults — change them via the `SEED_OWNER_*` env vars; see [`docker/README.md`](./docker/README.md).)
 
-`pnpm dev` runs all three apps via Turborepo. The SPA proxies API calls to the two
-services, so you browse everything through `http://localhost:5173`.
+### What's running
 
-> The auth service and the API need a running PostgreSQL (plus migrations + seed) to
-> function fully — the quickest way is `docker compose up`, which boots Postgres, runs
-> migrations, seeds the first org/owner, and starts both services. Run `pnpm dev` on top
-> when you want hot-reload against that database.
-
-### Services
-
-| Service          | URL                   | Notes                                            |
-| ---------------- | --------------------- | ------------------------------------------------ |
-| Web SPA (Vite)   | http://localhost:5173 | proxies `/api/auth` → :3100 and `/api` → :3000   |
-| App API (server) | http://localhost:3000 | REST `/api/v1`, typed RPC, OpenAPI docs          |
-| Auth service     | http://localhost:3100 | Better Auth (sign-in, email OTP, sessions, orgs) |
-| PostgreSQL       | localhost:5432        | via `docker compose up` (db/user/pass: `lagda`)  |
+| Service         | URL                   | Notes                                                     |
+| --------------- | --------------------- | --------------------------------------------------------- |
+| App (SPA + API) | http://localhost:3000 | the UI plus the REST `/api/v1` and OpenAPI docs           |
+| Auth service    | http://localhost:3100 | Better Auth (sign-in, email OTP, sessions, organizations) |
+| PostgreSQL      | localhost:5432        | db/user/pass `lagda`                                      |
 
 ### App API endpoints (`:3000`)
 
@@ -83,6 +63,32 @@ docker compose -f docker-compose.observability.yml up
 | Grafana    | http://localhost:3001 |
 | Prometheus | http://localhost:9090 |
 | Loki       | http://localhost:3102 |
+
+## Tech Stack
+
+TypeScript · Node.js · [Hono](https://hono.dev) · [Vite](https://vitejs.dev) + React · [Kysely](https://kysely.dev) (PostgreSQL) · [Turborepo](https://turbo.build) · [pnpm](https://pnpm.io) · [oxlint + oxfmt](https://oxc.rs)
+
+## Development (contributing)
+
+Running the app doesn't need a toolchain — but **contributing** (hot-reload, tests, linting)
+does: **Node 20+** and **pnpm 9+**.
+
+```bash
+pnpm install
+pnpm dev          # hot-reload: web on :5173 (proxies the API/auth), plus the watch servers
+pnpm check        # full verification: lint + typecheck + test + build
+```
+
+`pnpm dev` serves the SPA from Vite on **http://localhost:5173** and proxies `/api` → :3000
+and `/api/auth` → :3100, so point it at a database first — the simplest is to leave
+`docker compose up` running and develop against it.
+
+```bash
+pnpm test         # run tests
+pnpm typecheck    # type check
+pnpm lint         # lint with oxlint
+pnpm format       # format with oxfmt
+```
 
 ## Project Structure
 
