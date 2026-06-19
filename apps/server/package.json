@@ -20,9 +20,14 @@
     "@hono/node-server": "^1.13.2",
     "@hono/zod-openapi": "^0.16.4",
     "@hono/zod-validator": "^0.4.1",
+    "@lagda/auth-contract": "workspace:*",
     "@lagda/core": "workspace:*",
+    "@lagda/db": "workspace:*",
+    "@lagda/jobs": "workspace:*",
     "@scalar/hono-api-reference": "^0.5.172",
     "hono": "^4.6.5",
+    "hono-rate-limiter": "^0.4.2",
+    "jose": "^5.9.6",
     "zod": "^3.23.8"
   },
   "devDependencies": {

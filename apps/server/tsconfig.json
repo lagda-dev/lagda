@@ -3,7 +3,14 @@
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["node"],
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@lagda/auth-contract": ["../../packages/auth-contract/src/auth-contract.ts"],
+      "@lagda/core": ["../../packages/core/src/core.ts"],
+      "@lagda/db": ["../../packages/db/src/db.ts"],
+      "@lagda/jobs": ["../../packages/jobs/src/jobs.ts"]
+    }
   },
   "include": ["src"]
 }
