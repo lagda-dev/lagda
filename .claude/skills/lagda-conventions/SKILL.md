@@ -165,7 +165,7 @@ Code reads like a story; each function explains one part of it.
 - **Encrypt at rest** (AES-GCM, key from env): OAuth tokens, application tokens, Slack webhook URLs. `directory_connections.encrypted_credentials` and `notification_channels` are never plaintext.
 - Hono `secureHeaders`; CSRF protection for cookie sessions; least-privilege Google scopes (documented in `SECURITY.md`).
 - Append-only `audit_log` for directory reads and signature writes.
-- Supply chain: CodeQL (SAST) + Renovate/`pnpm audit` (SCA); pinned/hash-locked GitHub Actions; SBOM + npm provenance on release.
+- Supply chain: Renovate/`pnpm audit` (SCA); pinned/hash-locked GitHub Actions; SBOM + npm provenance on release. (No SAST/CodeQL — secret scanning via gitleaks is the security-scan gate.)
 - **No PII in logs/traces/metrics**; scrub before shipping to Loki. Security-relevant changes go under the changelog `Security` heading.
 
 ---
