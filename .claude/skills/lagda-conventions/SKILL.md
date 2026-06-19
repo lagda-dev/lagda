@@ -191,7 +191,8 @@ Code reads like a story; each function explains one part of it.
 - **Conventional Commits**, enforced by commitlint; small, logical commits (not one giant commit).
 - **CLA required** — every contributor signs via CLA Assistant (grants the dual-licensing rights open-core needs). This **replaces DCO**; do not use `-s` sign-off as the mechanism.
 - **A Changeset on every PR** that changes behavior — CI fails PRs without one. Changesets computes the SemVer bump and the changelog (Keep a Changelog format).
-- **Trunk-based**; `main` is protected. **Release gates:** all required checks green (lint, typecheck, ≥90% coverage, build, e2e, Argos approved) + changeset present + manual approval (GitHub Environment) before publish; publish with npm provenance.
+- **Trunk-based**; `main` is protected. **Release gates:** all required checks green (lint, typecheck, ≥90% coverage, build, e2e, Argos approved) + changeset present + manual approval (GitHub Environment) before publish.
+- **Release packaging:** a published GitHub Release builds and pushes the `server` and `auth` container images to the **GitHub Container Registry** (`ghcr.io/lagda-dev/lagda-{server,auth}`) with SBOM + provenance, tagged by SemVer (`latest` only on stable, non-prerelease). npm library packages publish with provenance.
 
 ---
 
