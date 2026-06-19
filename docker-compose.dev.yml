@@ -1,0 +1,92 @@
+# Lagda — local development backing services.
+#
+# This brings up ONLY the stateful backend (Postgres + schema migrations + the first-org/owner seed)
+# so you can run the apps locally with hot reload (`pnpm dev`) on any feature branch:
+#
+#   docker compose -f docker-compose.dev.yml up -d   # Postgres, migrated + seeded (one-time-ish)
+#   pnpm dev                                          # web :5173 (HMR) + server :3000 + auth :3100 (watch)
+#
+# The migrate/seed one-shots run inside containers (talking to `postgres` on the compose network);
+# your locally-run apps reach the same database at localhost:5432 (see .env / .env.example).
+# Seeding is in-process (no running auth service needed) and idempotent.
+#
+# Ports on the host: postgres :5432. The app/auth/web servers are run by `pnpm dev`, not here.
+
+x-postgres-credentials: &postgres-credentials
+  POSTGRES_USER: ${POSTGRES_USER:-lagda}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lagda}
+  POSTGRES_DB: ${POSTGRES_DB:-lagda}
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: lagda-dev-postgres
+    restart: unless-stopped
+    environment: *postgres-credentials
+    volumes:
+      - lagda-dev-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lagda} -d ${POSTGRES_DB:-lagda}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lagda-dev
+
+  # One-shot: apply the app (Kysely) + Better Auth schemas, then exit.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/auth/Dockerfile
+      target: tooling
+    image: lagda-tooling
+    container_name: lagda-dev-migrate
+    environment:
+      # Hardcoded to the compose-network service name (NOT ${DATABASE_URL}) so a local dev .env —
+      # which points the host-run apps at localhost:5432 — can't leak into these containers.
+      DATABASE_URL: postgres://lagda:lagda@postgres:5432/lagda
+      AUTH_BASE_URL: http://localhost:3100
+    command: >-
+      sh -c "pnpm --filter @lagda/db migrate && pnpm --filter @lagda/auth run migrate:auth"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - lagda-dev
+
+  # One-shot: create the first organization + owner (in-process Better Auth, no running auth needed).
+  # Idempotent — exits early if an organization already exists.
+  seed:
+    build:
+      context: .
+      dockerfile: apps/auth/Dockerfile
+      target: tooling
+    image: lagda-tooling
+    container_name: lagda-dev-seed
+    environment:
+      # Hardcoded to the compose-network service name (NOT ${DATABASE_URL}) so a local dev .env —
+      # which points the host-run apps at localhost:5432 — can't leak into these containers.
+      DATABASE_URL: postgres://lagda:lagda@postgres:5432/lagda
+      AUTH_BASE_URL: http://localhost:3100
+      SEED_OWNER_EMAIL: ${SEED_OWNER_EMAIL:-owner@lagda.local}
+      SEED_OWNER_PASSWORD: ${SEED_OWNER_PASSWORD:-lagda-dev-owner}
+      SEED_OWNER_NAME: ${SEED_OWNER_NAME:-Lagda Owner}
+      SEED_ORGANIZATION_NAME: ${SEED_ORGANIZATION_NAME:-Lagda}
+      SEED_ORGANIZATION_SLUG: ${SEED_ORGANIZATION_SLUG:-lagda}
+    command: ["pnpm", "--filter", "@lagda/auth", "run", "seed"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+    networks:
+      - lagda-dev
+
+volumes:
+  lagda-dev-postgres-data:
+
+networks:
+  lagda-dev:
+    driver: bridge
