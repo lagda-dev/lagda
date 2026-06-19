@@ -1,0 +1,30 @@
+# Grafana datasource provisioning (lagda-conventions §9).
+# Prometheus = metrics, Loki = logs. Grafana reads both.
+# Hostnames are the compose service names on the shared network.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s
+
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      maxLines: 1000
+      # Correlate log lines carrying a traceId to traces when an
+      # OTLP trace datasource is added later.
+      derivedFields:
+        - name: traceId
+          matcherRegex: '"traceId":"(\w+)"'
+          url: "$${__value.raw}"

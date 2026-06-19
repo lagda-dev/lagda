@@ -1,0 +1,99 @@
+# Prometheus alert rules for Lagda (lagda-conventions §9).
+#
+# Metric names here MUST match the names emitted by prom-client in the
+# apps and the names used by the Grafana dashboards:
+#   - http_requests_total{service,method,route,status_code}
+#   - http_request_duration_seconds_bucket{service,method,route,le}
+#   - db_query_duration_seconds_bucket{service,operation,le}
+#   - jobs_queue_depth{queue}
+#   - jobs_processed_total{queue,status}
+#   - sync_runs_total{outcome}
+#
+# These rules cover: RED error rate, latency SLO breach (p95 approaching
+# the 1s query ceiling from §5), and job-queue backlog.
+
+groups:
+  - name: lagda-red
+    rules:
+      - alert: HighHttpErrorRate
+        # 5xx rate over total request rate above 5% for 5m (RED — Errors).
+        expr: |
+          (
+            sum by (service) (rate(http_requests_total{status_code=~"5.."}[5m]))
+            /
+            sum by (service) (rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: High HTTP 5xx error rate on {{ $labels.service }}
+          description: >-
+            {{ $labels.service }} is serving more than 5% 5xx responses over
+            the last 5 minutes (current: {{ $value | humanizePercentage }}).
+
+  - name: lagda-latency
+    rules:
+      - alert: LatencySloBreachP95
+        # p95 request latency approaching the 1s query ceiling (§5).
+        # Warn at 0.8s so there is headroom before the hard limit.
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (service, le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: p95 latency SLO breach on {{ $labels.service }}
+          description: >-
+            p95 request latency on {{ $labels.service }} is {{ $value }}s,
+            approaching the 1s query/response ceiling.
+
+      - alert: DbQueryLatencyHighP95
+        # DB query p95 approaching the Postgres statement_timeout (1s, §5).
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (service, le) (rate(db_query_duration_seconds_bucket[5m]))
+          ) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: DB query p95 latency high on {{ $labels.service }}
+          description: >-
+            p95 DB query duration on {{ $labels.service }} is {{ $value }}s,
+            approaching the 1s statement_timeout.
+
+  - name: lagda-jobs
+    rules:
+      - alert: JobQueueBacklog
+        # Queue depth sustained above 100 pending jobs for 10m.
+        expr: max by (queue) (jobs_queue_depth) > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Job queue backlog on {{ $labels.queue }}
+          description: >-
+            The {{ $labels.queue }} queue has {{ $value }} pending jobs,
+            sustained for over 10 minutes.
+
+      - alert: JobFailureRateHigh
+        # More than 10% of processed jobs failing over 15m.
+        expr: |
+          (
+            sum by (queue) (rate(jobs_processed_total{status="failed"}[15m]))
+            /
+            sum by (queue) (rate(jobs_processed_total[15m]))
+          ) > 0.1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: High job failure rate on {{ $labels.queue }}
+          description: >-
+            More than 10% of {{ $labels.queue }} jobs are failing over the
+            last 15 minutes (current: {{ $value | humanizePercentage }}).

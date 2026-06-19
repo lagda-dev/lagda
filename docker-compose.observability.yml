@@ -1,0 +1,94 @@
+# Lagda self-hostable observability stack (lagda-conventions §9).
+#
+# Prometheus (metrics) + Loki (logs) + Grafana (reads both, Grafana
+# Alerting -> Slack). This is CONFIG ONLY — it observes the app
+# (apps/server :3000) and auth (apps/auth :3100) services, which expose
+# /metrics and ship pino JSON logs to Loki.
+#
+# Run:   docker compose -f docker-compose.observability.yml up
+# Stop:  docker compose -f docker-compose.observability.yml down
+#
+# Ports exposed on the host:
+#   - Grafana    : 3001  (3000 avoided — it clashes with apps/server)
+#   - Prometheus : 9090
+#   - Loki       : 3102  (log ingest + query; apps push pino logs here)
+#
+# Local dev: the app + auth services run on the HOST, so the scrape
+# targets in prometheus/prometheus.yml use `host.docker.internal`. The
+# `extra_hosts` mapping below makes that resolve on Linux (it already
+# works on Docker Desktop / macOS).
+#
+# Full stack: when the app + auth run as containers on this network,
+# edit prometheus.yml to scrape `server:3000` / `auth:3100` and attach
+# those services to the `observability` network (see commented note in
+# prometheus.yml).
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: lagda-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    volumes:
+      - ./docker/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/observability/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - observability
+
+  loki:
+    image: grafana/loki:3.2.1
+    container_name: lagda-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./docker/observability/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    ports:
+      # Host 3102 to avoid clashing with the auth service on :3100 (container stays 3100).
+      - "3102:3100"
+    networks:
+      - observability
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: lagda-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - loki
+    environment:
+      # Grafana served on :3001 to avoid clashing with apps/server :3000.
+      GF_SERVER_HTTP_PORT: "3001"
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Consumed by provisioning/alerting/slack.yml — never commit a real value.
+      SLACK_ALERT_WEBHOOK_URL: "${SLACK_ALERT_WEBHOOK_URL:-}"
+    volumes:
+      - ./docker/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - observability
+
+volumes:
+  prometheus-data:
+  loki-data:
+  grafana-data:
+
+networks:
+  observability:
+    driver: bridge
