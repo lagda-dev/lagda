@@ -64,8 +64,11 @@ export const createApp = (deps: ApiDependencies, options: AppOptions = {}) => {
   }
 
   // Register the public v1 resources on the OpenAPIHono app, then chain the OpenAPI health route and
-  // the plain probes. `.openapi(...)` preserves the OpenAPIHono type (so v1 registration keeps
-  // working); the trailing `.get(...)` probes finalize the chain `AppType` is derived from.
+  // the plain probes. `registerV1Routes` threads each resource's `.openapi(...)` result into the next
+  // and returns the accumulated router, so its return type carries every `/api/v1/*` route. The
+  // trailing `.openapi(...)`/`.get(...)` calls below finalize the chain `AppType` is derived from —
+  // that union of route types is what the SPA's `hc<AppType>` client reads (e.g. `client.api.v1.
+  // templates.$get`, `client.api.v1.synchronizations.$post`).
   const withV1 = registerV1Routes(app, deps)
 
   // The Prometheus scrape endpoint (§9). A no-op responder keeps `/metrics` on `AppType` when no

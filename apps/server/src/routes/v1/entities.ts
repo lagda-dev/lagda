@@ -1,4 +1,5 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
+import type { Schema } from "hono"
 import { PERMISSIONS } from "@lagda/auth-contract"
 import type { AuthVariables } from "../../middleware/authContext"
 import { itemOutcome, listOutcome } from "./handlers"
@@ -19,7 +20,7 @@ const entitySchema = z
   })
   .openapi("Entity")
 
-export const registerEntities = (app: OpenAPIHono<{ Variables: AuthVariables }>, deps: ApiDependencies) => {
+export const registerEntities = <S extends Schema>(app: OpenAPIHono<{ Variables: AuthVariables }, S>, deps: ApiDependencies) => {
   const protect = guard(deps, PERMISSIONS.MANAGE_ENTITIES)
 
   const listRoute = createRoute({

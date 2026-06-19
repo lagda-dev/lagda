@@ -1,4 +1,5 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
+import type { Schema } from "hono"
 import { PERMISSIONS } from "@lagda/auth-contract"
 import type { AuthVariables } from "../../middleware/authContext"
 import { listOutcome } from "./handlers"
@@ -12,7 +13,7 @@ import type { ApiDependencies } from "./dependencies"
 
 const roleSchema = z.object({ name: z.string() }).openapi("Role")
 
-export const registerRoles = (app: OpenAPIHono<{ Variables: AuthVariables }>, deps: ApiDependencies) => {
+export const registerRoles = <S extends Schema>(app: OpenAPIHono<{ Variables: AuthVariables }, S>, deps: ApiDependencies) => {
   const listRoute = createRoute({
     method: "get",
     path: "/api/v1/roles",

@@ -1,6 +1,6 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
 import { PERMISSIONS } from "@lagda/auth-contract"
-import type { Context } from "hono"
+import type { Context, Schema } from "hono"
 import { getErrorMessage } from "../../infrastructure/getErrorMessage"
 import type { AuthVariables } from "../../middleware/authContext"
 import { claimsFrom, failOutcome, itemOutcome, listOutcome, okOutcome, paginationFrom } from "./handlers"
@@ -67,7 +67,7 @@ const deploymentsOutcome = async (ctx: Context, deps: ApiDependencies, syncRunId
   }
 }
 
-export const registerSynchronizations = (app: OpenAPIHono<{ Variables: AuthVariables }>, deps: ApiDependencies) => {
+export const registerSynchronizations = <S extends Schema>(app: OpenAPIHono<{ Variables: AuthVariables }, S>, deps: ApiDependencies) => {
   const readGuard = guard(deps, PERMISSIONS.RUN_SYNCS, "syncs:read")
   const writeGuard = guard(deps, PERMISSIONS.RUN_SYNCS, "syncs:write")
 

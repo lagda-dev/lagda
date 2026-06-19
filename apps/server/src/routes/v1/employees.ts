@@ -1,4 +1,5 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
+import type { Schema } from "hono"
 import { PERMISSIONS } from "@lagda/auth-contract"
 import type { AuthVariables } from "../../middleware/authContext"
 import { itemOutcome, listOutcome } from "./handlers"
@@ -22,7 +23,7 @@ const employeeSchema = z
   })
   .openapi("Employee")
 
-export const registerEmployees = (app: OpenAPIHono<{ Variables: AuthVariables }>, deps: ApiDependencies) => {
+export const registerEmployees = <S extends Schema>(app: OpenAPIHono<{ Variables: AuthVariables }, S>, deps: ApiDependencies) => {
   const protect = guard(deps, PERMISSIONS.READ_EMPLOYEES, "directory:read")
 
   const listRoute = createRoute({
