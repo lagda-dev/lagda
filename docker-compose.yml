@@ -1,0 +1,155 @@
+# Lagda — zero-config self-host stack (Phase B, Wave 2).
+#
+# `docker compose up` brings up, in order: Postgres -> migrations (app schema + Better Auth schema) ->
+# auth service -> server, plus a one-shot seed that creates the first organization + owner. Every value
+# has a sane dev default, so no .env is required to boot.
+#
+# Ports on the host:  server :3000  ·  auth :3100  ·  postgres :5432
+#
+# SECURITY: the Postgres credentials and the seeded owner credentials below are DEV-ONLY defaults.
+# Override them via the environment (see docker/README.md) before any non-local deployment.
+
+x-postgres-credentials: &postgres-credentials
+  POSTGRES_USER: ${POSTGRES_USER:-lagda}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lagda}
+  POSTGRES_DB: ${POSTGRES_DB:-lagda}
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: lagda-postgres
+    restart: unless-stopped
+    environment: *postgres-credentials
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      # Wait until Postgres accepts connections for the seeded role/db before anything migrates.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lagda} -d ${POSTGRES_DB:-lagda}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lagda
+
+  # One-shot: apply BOTH schemas (the app's Kysely migrations AND the Better Auth schema) to the single
+  # `lagda` database, then exit 0. They share one DB; table names are distinct so they coexist safely.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/auth/Dockerfile
+      target: tooling
+    image: lagda-tooling
+    container_name: lagda-migrate
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://lagda:lagda@postgres:5432/lagda}
+      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://auth:3100}
+    # App schema first (@lagda/db Kysely migrator), then the Better Auth schema (CLI migrate).
+    command: >-
+      sh -c "pnpm --filter @lagda/db migrate && pnpm --filter @lagda/auth run migrate:auth"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - lagda
+
+  auth:
+    build:
+      context: .
+      dockerfile: apps/auth/Dockerfile
+      target: runner
+    image: lagda-auth
+    container_name: lagda-auth
+    restart: unless-stopped
+    environment:
+      PORT: "3100"
+      # Auth uses the shared DATABASE_URL (no dedicated AUTH_DATABASE_URL in the zero-config path).
+      DATABASE_URL: ${DATABASE_URL:-postgres://lagda:lagda@postgres:5432/lagda}
+      # AUTH_BASE_URL is the JWT issuer and the origin the server resolves its JWKS from (see below).
+      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://auth:3100}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${AUTH_PORT:-3100}:3100"
+    healthcheck:
+      # Liveness probe (§9). Node has no curl in slim; use a tiny inline http GET.
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3100/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - lagda
+
+  # One-shot: create the first organization + owner once auth is healthy. Idempotent — re-running on an
+  # already-seeded DB is a no-op (it exits early when an organization already exists).
+  seed:
+    build:
+      context: .
+      dockerfile: apps/auth/Dockerfile
+      target: tooling
+    image: lagda-tooling
+    container_name: lagda-seed
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://lagda:lagda@postgres:5432/lagda}
+      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://auth:3100}
+      # DEV-ONLY default owner credentials — override these before any real deployment.
+      SEED_OWNER_EMAIL: ${SEED_OWNER_EMAIL:-owner@lagda.local}
+      SEED_OWNER_PASSWORD: ${SEED_OWNER_PASSWORD:-lagda-dev-owner}
+      SEED_OWNER_NAME: ${SEED_OWNER_NAME:-Lagda Owner}
+      SEED_ORGANIZATION_NAME: ${SEED_ORGANIZATION_NAME:-Lagda}
+      SEED_ORGANIZATION_SLUG: ${SEED_ORGANIZATION_SLUG:-lagda}
+    command: ["pnpm", "--filter", "@lagda/auth", "run", "seed"]
+    depends_on:
+      auth:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - lagda
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+      target: runner
+    image: lagda-server
+    container_name: lagda-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: ${DATABASE_URL:-postgres://lagda:lagda@postgres:5432/lagda}
+      # The resource server verifies bearer JWTs against the auth service's JWKS. Inside the compose
+      # network the auth service is reachable by its service name `auth`, so the JWKS URL points there.
+      # This is what makes a token minted by `auth` accepted by `server` (signature verified via JWKS).
+      AUTH_JWKS_URL: ${AUTH_JWKS_URL:-http://auth:3100/api/auth/jwks}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_GLOBAL: ${RATE_LIMIT_GLOBAL:-120}
+      RATE_LIMIT_WRITE: ${RATE_LIMIT_WRITE:-30}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      auth:
+        condition: service_healthy
+    ports:
+      - "${SERVER_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - lagda
+
+volumes:
+  postgres-data:
+
+networks:
+  lagda:
+    driver: bridge

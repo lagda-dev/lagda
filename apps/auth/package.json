@@ -14,7 +14,9 @@
     "start": "node dist/server.js",
     "lint": "oxlint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "migrate:auth": "tsx scripts/migrateAuth.ts",
+    "seed": "tsx scripts/seedFirstOrganization.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.2",

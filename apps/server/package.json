@@ -28,6 +28,8 @@
     "hono": "^4.6.5",
     "hono-rate-limiter": "^0.4.2",
     "jose": "^5.9.6",
+    "pg": "^8.13.0",
+    "pg-boss": "^10.1.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
