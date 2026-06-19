@@ -1,4 +1,5 @@
 import type { OpenAPIHono } from "@hono/zod-openapi"
+import type { Schema } from "hono"
 import type { AuthVariables } from "../../middleware/authContext"
 import type { ApiDependencies } from "./dependencies"
 import { registerOrganizations } from "./organizations"
@@ -11,18 +12,20 @@ import { registerDepartments } from "./departments"
 import { registerRoles } from "./roles"
 import { registerAuditEvents } from "./auditEvents"
 
-// Mount every v1 resource onto the app in one place. Each `register*` chains its routes and returns
-// the same app, so `AppType` stays accurate for the SPA's `hc<AppType>` client. Read top-to-bottom,
-// this is the public API surface as a checklist.
-export const registerV1Routes = (app: OpenAPIHono<{ Variables: AuthVariables }>, deps: ApiDependencies) => {
-  registerOrganizations(app, deps)
-  registerEntities(app, deps)
-  registerEmployees(app, deps)
-  registerTemplates(app, deps)
-  registerAssignments(app, deps)
-  registerSynchronizations(app, deps)
-  registerDepartments(app, deps)
-  registerRoles(app, deps)
-  registerAuditEvents(app, deps)
-  return app
+// Mount every v1 resource onto the app in one place. Hono RPC only carries route types through the
+// *return value* of each `.openapi(...)` chain, so we must thread each `register*` result into the
+// next — the returned schema accumulates every resource's routes. The final return is what `AppType`
+// is derived from in `app.ts`, which is what lets the SPA's `hc<AppType>` client see every resource
+// (e.g. `client.api.v1.templates.$get`). Read top-to-bottom, this is the public API surface as a
+// checklist; the runtime mounts are unchanged (same app instance, same `/api/v1/...` URLs).
+export const registerV1Routes = <S extends Schema>(app: OpenAPIHono<{ Variables: AuthVariables }, S>, deps: ApiDependencies) => {
+  const withOrganizations = registerOrganizations(app, deps)
+  const withEntities = registerEntities(withOrganizations, deps)
+  const withEmployees = registerEmployees(withEntities, deps)
+  const withTemplates = registerTemplates(withEmployees, deps)
+  const withAssignments = registerAssignments(withTemplates, deps)
+  const withSynchronizations = registerSynchronizations(withAssignments, deps)
+  const withDepartments = registerDepartments(withSynchronizations, deps)
+  const withRoles = registerRoles(withDepartments, deps)
+  return registerAuditEvents(withRoles, deps)
 }
