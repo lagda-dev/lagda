@@ -15,7 +15,7 @@ description: >-
 
 Lagda is an open-source, self-hostable **email-signature management platform** (an
 open-core email-signature platform). This skill is the single source of
-truth for *how* we build it. Follow it on every change. For step-by-step recipes, defer to
+truth for _how_ we build it. Follow it on every change. For step-by-step recipes, defer to
 the task skills:
 
 - **`add-api-endpoint`** — adding a REST/RPC endpoint end-to-end.
@@ -26,7 +26,7 @@ the task skills:
 
 ## 1. Architecture (non-negotiable shape)
 
-- **Monorepo, two deployables.** The *application* is a monolith; *auth* is a separate service.
+- **Monorepo, two deployables.** The _application_ is a monolith; _auth_ is a separate service.
   - `apps/server` — Hono application monolith: serves the `/api/*` routes **and** the built SPA. It is a **resource server** — it runs **no Better Auth**; it validates bearer tokens by verifying their signature against the auth service's **JWKS** (stateless).
   - `apps/auth` — Better Auth identity/token service: sign-in, email OTP, sessions, organizations/roles, and minting scoped application tokens. The **only** token authority. Owns its own schema.
   - `apps/web` — Vite + React SPA. Talks to `apps/server` via the typed Hono RPC client.
@@ -42,11 +42,13 @@ Package manager is **pnpm** (workspaces in `pnpm-workspace.yaml`). Build orchest
 **Turborepo** (`turbo.json`). Run tasks through Turbo, never hand-rolled scripts that bypass it.
 
 **Where code goes:**
+
 - `apps/*` — deployables (`web`, `server`, `auth`). No shared library code here.
 - `packages/*` — shared libraries: `ui` (design system), `core` (domain types + Zod config), `db` (Kysely client/schema/migrations), `jobs` (pg-boss defs), `connectors` (Google + MS stub), `templating` (MJML), `auth-contract` (token/claims/permission types shared by server + auth).
 - Cross-`app` imports are **type-only** (e.g., `apps/web` imports `AppType` from `apps/server`).
 
 **`turbo.json` task pipeline (keep it like this):**
+
 - `build`: `"dependsOn": ["^build"]`, `"outputs": ["dist/**", "storybook-static/**"]` — topological, cached.
 - `lint`: no deps, no outputs (cacheable).
 - `typecheck`: `"dependsOn": ["^build"]` (needs upstream `.d.ts`), no outputs.
@@ -54,6 +56,7 @@ Package manager is **pnpm** (workspaces in `pnpm-workspace.yaml`). Build orchest
 - `dev`: `"cache": false, "persistent": true`.
 
 **Rules:**
+
 - Every package declares its own `build`/`lint`/`typecheck`/`test` scripts; the root delegates via `turbo run …`.
 - Always declare a task's `outputs` so Turbo can cache it; unchanged packages must be skippable in CI.
 - CI runs `turbo run lint typecheck test build` — caching is what keeps the §gates fast.
@@ -91,7 +94,7 @@ API-client packages (`db`, `connectors`, and the server's resource modules); `ui
 - **Frontend:** Vite + React + **React Router**; data fetching via TanStack Query over the Hono RPC client.
 - **Styling:** Tailwind, **Tailwind-native**, via the shared preset in `packages/ui`. Do not introduce a second styling system.
 - **Components:** **shadcn/ui owned in `packages/ui`** (Radix + Tailwind + `cva`); `neutral` base, `new-york` style, **minimalist, neutral aesthetic** (neutral grays, near-black primary, 1px borders over shadows, small radius, Inter, generous whitespace). The SPA imports all UI from `packages/ui` — no duplicated primitives.
-- **Data access:** **Kysely, no ORM.** Postgres is the default; the data layer stays dialect-agnostic (`DATABASE_URL` + `DB_DIALECT`). Migrations via Kysely `Migrator`; regenerate the `Database` type with `kysely-codegen`. Never add an ORM.
+- **Data access:** **Kysely, no ORM. PostgreSQL only** — connection via `DATABASE_URL`; no other SQL dialect is supported (MySQL/SQLite are explicitly out of scope). Migrations via Kysely `Migrator`; regenerate the `Database` type with `kysely-codegen`. Never add an ORM.
 - **Validation:** Zod everywhere (see §4).
 - **Auth:** Better Auth in `apps/auth` only.
 - **Lint / format / typecheck:** **OXC toolchain — `oxlint` + `oxfmt`, never ESLint/Biome/Prettier.** `oxfmt` owns whitespace (`semi: false`, double quotes, `printWidth: 160`); never hand-format. Types via `tsc --noEmit`. Lint/format/typecheck run through Turbo tasks; CI fails on any violation.
@@ -105,7 +108,7 @@ Code reads like a story; each function explains one part of it.
 - **Always destructure** when accessing 2+ properties of an object (params and locals).
 - **Variable names ≥ 3 characters** — `user`/`page`/`keyResult`, never `u`/`p`/`kr`. **`ctx` is always the first parameter** of any function that takes a context object.
 - **Control flow:** prefer **early returns** over `if/else`; **no nested loops** (use `flatMap`/`map`/`filter` or a named helper); **no `while` loops** (use recursion or array methods, e.g. a recursive `collectAll` for pagination); keep nesting shallow.
-- **Storytelling names & steps:** function names say WHAT *and* HOW (`getActiveEmployeesByEntity`, not `getEmployees`); use **named intermediate variables** — no chained `.filter().map().reduce()` one-liners; extract named step helpers so an orchestrator reads as a clean checklist of calls (orchestrators hold zero business logic).
+- **Storytelling names & steps:** function names say WHAT _and_ HOW (`getActiveEmployeesByEntity`, not `getEmployees`); use **named intermediate variables** — no chained `.filter().map().reduce()` one-liners; extract named step helpers so an orchestrator reads as a clean checklist of calls (orchestrators hold zero business logic).
 - **One file per step:** each distinct phase of a multi-step process lives in its own file named after the exported function.
 - **Error handling (critical):** every operation that can fail handles it explicitly — **no silent failures**. Wrap at the **source** with a shared `getErrorMessage(error)`; callers that delegate to already-wrapping functions must **not** double-wrap. Log structured context via `pino` (`{ operation, error }`), never PII (§8). At HTTP boundaries, translate to the §4 error envelope with the right status code.
 - **No ambiguous abbreviations:** never `Sync` (collides with JS's synchronous-variant convention) — use `Synchronize`/`reconcile`/`push`/`pull`. (The resource is `synchronizations`; the verb in code is `synchronize`.)
@@ -119,7 +122,7 @@ Code reads like a story; each function explains one part of it.
 - **Every request is Zod-validated** (body, query, params, relevant headers) via `@hono/zod-validator` / `@hono/zod-openapi`. No handler trusts unvalidated input.
 - **Resource naming:** plural, lowercase, hyphenated nouns; collection `/api/v1/<resource>`, item `/<resource>/{id}`, sub-resources nested one level. HTTP methods are the verbs (no `/getX`); the only allowed action suffixes are explicit ones like `/cancel`.
 - **Canonical resources:** `organizations`, `entities`, `users` (login members), `employees` (directory-synced people), `templates`, `assignments`, `synchronizations` (+ `/{id}/deployments`, `/cancel`), `deployments`, `directory-connections`, `notification-channels`, `application-tokens`; read-only `departments`, `roles`, `audit-events`.
-- **`users` ≠ `employees`:** a *user* is a login account/member with a role; an *employee* is a directory-synced signature recipient. Keep them distinct.
+- **`users` ≠ `employees`:** a _user_ is a login account/member with a role; an _employee_ is a directory-synced signature recipient. Keep them distinct.
 - **Lists are always cursor-paginated:** `?cursor=&limit=`, default 25 / max 100, envelope `{ data, nextCursor }`. No unbounded list queries.
 - **Errors:** one shape — `{ error: { code, message, details? } }` — with correct status codes.
 - **Public-API auth:** scoped **application tokens** minted by the auth service (owner/admin only), validated by `apps/server` via JWKS; enforce token scopes. `POST`s accept an `Idempotency-Key`.
