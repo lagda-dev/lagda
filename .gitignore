@@ -19,3 +19,6 @@ storybook-static
 # Test/build artifacts
 playwright-report
 test-results
+
+# Playwright MCP session artifacts
+.playwright-mcp
