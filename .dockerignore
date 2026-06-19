@@ -1,0 +1,40 @@
+# Keep the Docker build context small and reproducible: never copy installed deps, build outputs,
+# caches, VCS metadata, secrets, or local tooling artifacts into the image. The builder stage runs a
+# clean `pnpm install --frozen-lockfile` from the committed lockfile, so node_modules must NOT leak in.
+
+# Dependencies (reinstalled inside the builder from the frozen lockfile)
+**/node_modules
+
+# Build outputs & generated artifacts
+**/dist
+**/build
+**/storybook-static
+**/.vite
+**/.next
+**/coverage
+playwright-report
+test-results
+
+# Caches & tooling
+**/.turbo
+.git
+.github
+.husky
+.vscode
+.changeset
+.playwright-mcp
+
+# Secrets & local env (never bake into an image)
+.env
+.env.local
+.env.*.local
+
+# OS / editor noise
+.DS_Store
+*.log
+
+# Docs & compose files not needed at build time
+docker/observability
+docker-compose*.yml
+**/Dockerfile
+.dockerignore
