@@ -1,12 +1,10 @@
 import { z } from "zod"
 
 export const LOG_LEVELS = ["debug", "info", "warn", "error"] as const
-export const DB_DIALECTS = ["postgres", "mysql", "sqlite"] as const
 
 export const configSchema = z.object({
   LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
   DATABASE_URL: z.string().url().optional(),
-  DB_DIALECT: z.enum(DB_DIALECTS).default("postgres"),
   PORT: z.coerce.number().int().positive().default(3000),
 })
 

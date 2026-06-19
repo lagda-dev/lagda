@@ -10,12 +10,12 @@ describe("loadConfig", () => {
     const config = loadConfig(env)
 
     // Assert
-    expect(config).toEqual({ LOG_LEVEL: "info", DB_DIALECT: "postgres", PORT: 3000 })
+    expect(config).toEqual({ LOG_LEVEL: "info", PORT: 3000 })
   })
 
   it("reads and coerces provided values", () => {
     // Arrange
-    const env = { LOG_LEVEL: "debug", DB_DIALECT: "sqlite", PORT: "8080", DATABASE_URL: "postgres://localhost/lagda" }
+    const env = { LOG_LEVEL: "debug", PORT: "8080", DATABASE_URL: "postgres://localhost/lagda" }
 
     // Act
     const config = loadConfig(env)
@@ -23,7 +23,6 @@ describe("loadConfig", () => {
     // Assert
     expect(config).toEqual({
       LOG_LEVEL: "debug",
-      DB_DIALECT: "sqlite",
       PORT: 8080,
       DATABASE_URL: "postgres://localhost/lagda",
     })
