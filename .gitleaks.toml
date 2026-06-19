@@ -1,0 +1,12 @@
+# gitleaks config — extends the default ruleset, with a narrow allowlist for the
+# documented dev-only defaults that ship in the repo (never real secrets).
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Dev-only seeded defaults and example/config files"
+regexes = [
+  # The documented zero-config dev owner password (see docker/README.md) — not a real secret.
+  '''lagda-dev-owner''',
+]
+paths = ['''\.env\.example''', '''docker/README\.md''']
