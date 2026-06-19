@@ -13,6 +13,7 @@ import { AuditEventsPage } from "./pages/AuditEventsPage"
 import { DashboardPage } from "./pages/DashboardPage"
 import { EmployeesPage } from "./pages/EmployeesPage"
 import { EntitiesPage } from "./pages/EntitiesPage"
+import { NotFoundPage } from "./pages/NotFoundPage"
 import { SettingsPage } from "./pages/SettingsPage"
 import { TemplatesPage } from "./pages/TemplatesPage"
 import { LoginPage } from "./pages/auth/LoginPage"
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
               { path: "/settings", element: <SettingsPage /> },
             ],
           },
+          { path: "*", element: <NotFoundPage /> },
         ],
       },
     ],
