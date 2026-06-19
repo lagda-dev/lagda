@@ -37,19 +37,33 @@ export const sampleSyncRun: SyncRunRecord = {
   createdAt: "2026-01-01T00:00:00.000Z",
 }
 
+// Sample write results the mock returns from create/update by default. Tests override per-case.
+export const sampleTemplate: TemplateRecord = { id: "tpl-1", entityId: "ent-1", name: "Default" }
+export const sampleAssignment: AssignmentRecord = { id: "asg-1", entityId: "ent-1", templateId: "tpl-1", target: { kind: "entity" } }
+export const sampleEntity: EntityRecord = { id: "ent-1", organizationId: ORG_ID, name: "Brand", slug: "brand" }
+export const sampleOrganization: OrganizationRecord = { id: ORG_ID, name: "Acme", slug: "acme" }
+
 // Build a repository whose every method is a vitest mock returning empty/sample data by default.
 // Tests override individual methods with `.mockResolvedValueOnce(...)` as needed.
 export const createMockRepository = (): Repository => ({
   listOrganizations: vi.fn(async (): Promise<Page<OrganizationRecord>> => emptyPage()),
   getOrganization: vi.fn(async (): Promise<OrganizationRecord | null> => null),
+  updateOrganization: vi.fn(async (): Promise<OrganizationRecord | null> => sampleOrganization),
   listEntities: vi.fn(async (): Promise<Page<EntityRecord>> => emptyPage()),
   getEntity: vi.fn(async (): Promise<EntityRecord | null> => null),
+  createEntity: vi.fn(async (): Promise<EntityRecord> => sampleEntity),
+  updateEntity: vi.fn(async (): Promise<EntityRecord | null> => sampleEntity),
   listEmployees: vi.fn(async (): Promise<Page<EmployeeRecord>> => emptyPage()),
   getEmployee: vi.fn(async (): Promise<EmployeeRecord | null> => null),
   listTemplates: vi.fn(async (): Promise<Page<TemplateRecord>> => emptyPage()),
   getTemplate: vi.fn(async (): Promise<TemplateRecord | null> => null),
+  createTemplate: vi.fn(async (): Promise<TemplateRecord | null> => sampleTemplate),
+  updateTemplate: vi.fn(async (): Promise<TemplateRecord | null> => sampleTemplate),
+  deleteTemplate: vi.fn(async (): Promise<boolean> => true),
   listAssignments: vi.fn(async (): Promise<Page<AssignmentRecord>> => emptyPage()),
   getAssignment: vi.fn(async (): Promise<AssignmentRecord | null> => null),
+  createAssignment: vi.fn(async (): Promise<AssignmentRecord | null> => sampleAssignment),
+  deleteAssignment: vi.fn(async (): Promise<boolean> => true),
   listDepartments: vi.fn(async (): Promise<Page<DepartmentRecord>> => emptyPage()),
   listRoles: vi.fn(async (): Promise<Page<RoleRecord>> => emptyPage()),
   listAuditEvents: vi.fn(async (): Promise<Page<AuditEventRecord>> => emptyPage()),

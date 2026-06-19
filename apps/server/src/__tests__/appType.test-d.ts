@@ -24,6 +24,19 @@ describe("AppType exposes the v1 resources through hc<AppType>", () => {
     expectTypeOf(client.api.v1.organizations[":id"].$get).toBeFunction()
   })
 
+  it("reaches the new write accessors so the SPA can manage resources", () => {
+    // The Wave-4 write routes must land on `AppType` too: a regression that drops one from the chain
+    // turns its accessor into `never`/`undefined` and fails typecheck.
+    expectTypeOf(client.api.v1.templates.$post).toBeFunction()
+    expectTypeOf(client.api.v1.templates[":id"].$patch).toBeFunction()
+    expectTypeOf(client.api.v1.templates[":id"].$delete).toBeFunction()
+    expectTypeOf(client.api.v1.assignments.$post).toBeFunction()
+    expectTypeOf(client.api.v1.assignments[":id"].$delete).toBeFunction()
+    expectTypeOf(client.api.v1.entities.$post).toBeFunction()
+    expectTypeOf(client.api.v1.entities[":id"].$patch).toBeFunction()
+    expectTypeOf(client.api.v1.organizations[":id"].$patch).toBeFunction()
+  })
+
   it("infers request and response types for a v1 resource end to end", () => {
     // The POST body for a synchronization must be inferred from the server's Zod schema — proving the
     // input type flows through, not just the route key.
