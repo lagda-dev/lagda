@@ -1,0 +1,7 @@
+export type { ConnectorInterface, DirectoryEmployee } from "./types"
+export type { GoogleClient } from "./google/googleClient"
+export type { GoogleDirectoryUser } from "./mappers/googleUserMapper"
+export { createGoogleClient } from "./google/googleClient"
+export { createGoogleConnector } from "./google/googleConnector"
+export { createMicrosoftConnector } from "./microsoft/microsoftConnector"
+export { toDirectoryEmployee } from "./mappers/googleUserMapper"
