@@ -20,14 +20,26 @@
             "type": "string"
           }
         },
-        "required": ["id", "name", "slug"]
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ]
       },
       "ApiErrorBody": {
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
-            "enum": ["bad_request", "unauthorized", "forbidden", "not_found", "conflict", "rate_limited", "internal_error"]
+            "enum": [
+              "bad_request",
+              "unauthorized",
+              "forbidden",
+              "not_found",
+              "conflict",
+              "rate_limited",
+              "internal_error"
+            ]
           },
           "message": {
             "type": "string"
@@ -36,7 +48,10 @@
             "nullable": true
           }
         },
-        "required": ["code", "message"]
+        "required": [
+          "code",
+          "message"
+        ]
       },
       "ApiError": {
         "type": "object",
@@ -45,7 +60,9 @@
             "$ref": "#/components/schemas/ApiErrorBody"
           }
         },
-        "required": ["error"]
+        "required": [
+          "error"
+        ]
       },
       "Entity": {
         "type": "object",
@@ -63,7 +80,12 @@
             "type": "string"
           }
         },
-        "required": ["id", "organizationId", "name", "slug"]
+        "required": [
+          "id",
+          "organizationId",
+          "name",
+          "slug"
+        ]
       },
       "Employee": {
         "type": "object",
@@ -94,7 +116,15 @@
             "nullable": true
           }
         },
-        "required": ["id", "entityId", "email", "firstName", "lastName", "department", "jobTitle"]
+        "required": [
+          "id",
+          "entityId",
+          "email",
+          "firstName",
+          "lastName",
+          "department",
+          "jobTitle"
+        ]
       },
       "Template": {
         "type": "object",
@@ -109,7 +139,11 @@
             "type": "string"
           }
         },
-        "required": ["id", "entityId", "name"]
+        "required": [
+          "id",
+          "entityId",
+          "name"
+        ]
       },
       "Assignment": {
         "type": "object",
@@ -130,7 +164,12 @@
             }
           }
         },
-        "required": ["id", "entityId", "templateId", "target"]
+        "required": [
+          "id",
+          "entityId",
+          "templateId",
+          "target"
+        ]
       },
       "SyncRun": {
         "type": "object",
@@ -143,7 +182,13 @@
           },
           "status": {
             "type": "string",
-            "enum": ["pending", "running", "succeeded", "failed", "cancelled"]
+            "enum": [
+              "pending",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
           },
           "templateId": {
             "type": "string",
@@ -159,7 +204,14 @@
             "type": "string"
           }
         },
-        "required": ["id", "organizationId", "status", "templateId", "counts", "createdAt"]
+        "required": [
+          "id",
+          "organizationId",
+          "status",
+          "templateId",
+          "counts",
+          "createdAt"
+        ]
       },
       "SyncRunAccepted": {
         "type": "object",
@@ -169,10 +221,19 @@
           },
           "status": {
             "type": "string",
-            "enum": ["pending", "running", "succeeded", "failed", "cancelled"]
+            "enum": [
+              "pending",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
           }
         },
-        "required": ["id", "status"]
+        "required": [
+          "id",
+          "status"
+        ]
       },
       "SyncTarget": {
         "oneOf": [
@@ -181,35 +242,47 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["org"]
+                "enum": [
+                  "org"
+                ]
               },
               "organizationId": {
                 "type": "string",
                 "minLength": 1
               }
             },
-            "required": ["kind", "organizationId"]
+            "required": [
+              "kind",
+              "organizationId"
+            ]
           },
           {
             "type": "object",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["entity"]
+                "enum": [
+                  "entity"
+                ]
               },
               "entityId": {
                 "type": "string",
                 "minLength": 1
               }
             },
-            "required": ["kind", "entityId"]
+            "required": [
+              "kind",
+              "entityId"
+            ]
           },
           {
             "type": "object",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["department"]
+                "enum": [
+                  "department"
+                ]
               },
               "entityId": {
                 "type": "string",
@@ -220,14 +293,20 @@
                 "minLength": 1
               }
             },
-            "required": ["kind", "entityId", "department"]
+            "required": [
+              "kind",
+              "entityId",
+              "department"
+            ]
           },
           {
             "type": "object",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["role"]
+                "enum": [
+                  "role"
+                ]
               },
               "entityId": {
                 "type": "string",
@@ -238,14 +317,20 @@
                 "minLength": 1
               }
             },
-            "required": ["kind", "entityId", "role"]
+            "required": [
+              "kind",
+              "entityId",
+              "role"
+            ]
           },
           {
             "type": "object",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["users"]
+                "enum": [
+                  "users"
+                ]
               },
               "entityId": {
                 "type": "string",
@@ -260,7 +345,11 @@
                 "minItems": 1
               }
             },
-            "required": ["kind", "entityId", "userIds"]
+            "required": [
+              "kind",
+              "entityId",
+              "userIds"
+            ]
           }
         ]
       },
@@ -275,7 +364,9 @@
             "minLength": 1
           }
         },
-        "required": ["target"]
+        "required": [
+          "target"
+        ]
       },
       "Deployment": {
         "type": "object",
@@ -291,14 +382,24 @@
           },
           "status": {
             "type": "string",
-            "enum": ["pending", "succeeded", "failed"]
+            "enum": [
+              "pending",
+              "succeeded",
+              "failed"
+            ]
           },
           "error": {
             "type": "string",
             "nullable": true
           }
         },
-        "required": ["id", "syncRunId", "employeeId", "status", "error"]
+        "required": [
+          "id",
+          "syncRunId",
+          "employeeId",
+          "status",
+          "error"
+        ]
       },
       "Department": {
         "type": "object",
@@ -307,7 +408,9 @@
             "type": "string"
           }
         },
-        "required": ["name"]
+        "required": [
+          "name"
+        ]
       },
       "Role": {
         "type": "object",
@@ -316,7 +419,9 @@
             "type": "string"
           }
         },
-        "required": ["name"]
+        "required": [
+          "name"
+        ]
       },
       "AuditEvent": {
         "type": "object",
@@ -337,21 +442,34 @@
             "type": "string"
           }
         },
-        "required": ["id", "actor", "action", "target", "createdAt"]
+        "required": [
+          "id",
+          "actor",
+          "action",
+          "target",
+          "createdAt"
+        ]
       },
       "HealthResponse": {
         "type": "object",
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["ok"]
+            "enum": [
+              "ok"
+            ]
           },
           "service": {
             "type": "string",
-            "enum": ["lagda-server"]
+            "enum": [
+              "lagda-server"
+            ]
           }
         },
-        "required": ["status", "service"]
+        "required": [
+          "status",
+          "service"
+        ]
       }
     },
     "parameters": {}
@@ -359,7 +477,9 @@
   "paths": {
     "/api/v1/organizations": {
       "get": {
-        "tags": ["organizations"],
+        "tags": [
+          "organizations"
+        ],
         "summary": "List organizations",
         "parameters": [
           {
@@ -405,7 +525,10 @@
                       "nullable": true
                     }
                   },
-                  "required": ["data", "nextCursor"]
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -465,7 +588,9 @@
     },
     "/api/v1/organizations/{id}": {
       "get": {
-        "tags": ["organizations"],
+        "tags": [
+          "organizations"
+        ],
         "summary": "Get an organization",
         "parameters": [
           {
@@ -545,7 +670,9 @@
     },
     "/api/v1/entities": {
       "get": {
-        "tags": ["entities"],
+        "tags": [
+          "entities"
+        ],
         "summary": "List entities",
         "parameters": [
           {
@@ -591,7 +718,10 @@
                       "nullable": true
                     }
                   },
-                  "required": ["data", "nextCursor"]
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -651,7 +781,9 @@
     },
     "/api/v1/entities/{id}": {
       "get": {
-        "tags": ["entities"],
+        "tags": [
+          "entities"
+        ],
         "summary": "Get an entity",
         "parameters": [
           {
@@ -731,7 +863,9 @@
     },
     "/api/v1/employees": {
       "get": {
-        "tags": ["employees"],
+        "tags": [
+          "employees"
+        ],
         "summary": "List employees",
         "parameters": [
           {
@@ -777,7 +911,10 @@
                       "nullable": true
                     }
                   },
-                  "required": ["data", "nextCursor"]
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -837,7 +974,9 @@
     },
     "/api/v1/employees/{id}": {
       "get": {
-        "tags": ["employees"],
+        "tags": [
+          "employees"
+        ],
         "summary": "Get an employee",
         "parameters": [
           {
@@ -917,7 +1056,9 @@
     },
     "/api/v1/templates": {
       "get": {
-        "tags": ["templates"],
+        "tags": [
+          "templates"
+        ],
         "summary": "List templates",
         "parameters": [
           {
@@ -963,7 +1104,10 @@
                       "nullable": true
                     }
                   },
-                  "required": ["data", "nextCursor"]
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -1023,7 +1167,9 @@
     },
     "/api/v1/templates/{id}": {
       "get": {
-        "tags": ["templates"],
+        "tags": [
+          "templates"
+        ],
         "summary": "Get a template",
         "parameters": [
           {
@@ -1103,7 +1249,9 @@
     },
     "/api/v1/assignments": {
       "get": {
-        "tags": ["assignments"],
+        "tags": [
+          "assignments"
+        ],
         "summary": "List assignments",
         "parameters": [
           {
@@ -1149,7 +1297,10 @@
                       "nullable": true
                     }
                   },
-                  "required": ["data", "nextCursor"]
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -1209,7 +1360,9 @@
     },
     "/api/v1/assignments/{id}": {
       "get": {
-        "tags": ["assignments"],
+        "tags": [
+          "assignments"
+        ],
         "summary": "Get an assignment",
         "parameters": [
           {
@@ -1289,7 +1442,9 @@
     },
     "/api/v1/synchronizations": {
       "get": {
-        "tags": ["synchronizations"],
+        "tags": [
+          "synchronizations"
+        ],
         "summary": "List synchronizations",
         "parameters": [
           {
@@ -1335,7 +1490,10 @@
                       "nullable": true
                     }
                   },
-                  "required": ["data", "nextCursor"]
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -1393,7 +1551,9 @@
         }
       },
       "post": {
-        "tags": ["synchronizations"],
+        "tags": [
+          "synchronizations"
+        ],
         "summary": "Create a synchronization",
         "parameters": [
           {
@@ -1481,7 +1641,9 @@
     },
     "/api/v1/synchronizations/{id}/deployments": {
       "get": {
-        "tags": ["synchronizations"],
+        "tags": [
+          "synchronizations"
+        ],
         "summary": "List a synchronization's deployments",
         "parameters": [
           {
@@ -1537,7 +1699,10 @@
                       "nullable": true
                     }
                   },
-                  "required": ["data", "nextCursor"]
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -1597,7 +1762,9 @@
     },
     "/api/v1/synchronizations/{id}": {
       "get": {
-        "tags": ["synchronizations"],
+        "tags": [
+          "synchronizations"
+        ],
         "summary": "Get synchronization status",
         "parameters": [
           {
@@ -1677,7 +1844,9 @@
     },
     "/api/v1/synchronizations/{id}/cancel": {
       "post": {
-        "tags": ["synchronizations"],
+        "tags": [
+          "synchronizations"
+        ],
         "summary": "Cancel a synchronization",
         "parameters": [
           {
@@ -1766,7 +1935,9 @@
     },
     "/api/v1/departments": {
       "get": {
-        "tags": ["departments"],
+        "tags": [
+          "departments"
+        ],
         "summary": "List departments",
         "parameters": [
           {
@@ -1812,7 +1983,10 @@
                       "nullable": true
                     }
                   },
-                  "required": ["data", "nextCursor"]
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -1872,7 +2046,9 @@
     },
     "/api/v1/roles": {
       "get": {
-        "tags": ["roles"],
+        "tags": [
+          "roles"
+        ],
         "summary": "List roles",
         "parameters": [
           {
@@ -1918,7 +2094,10 @@
                       "nullable": true
                     }
                   },
-                  "required": ["data", "nextCursor"]
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -1978,7 +2157,9 @@
     },
     "/api/v1/audit-events": {
       "get": {
-        "tags": ["audit-events"],
+        "tags": [
+          "audit-events"
+        ],
         "summary": "List audit events",
         "parameters": [
           {
@@ -2024,7 +2205,10 @@
                       "nullable": true
                     }
                   },
-                  "required": ["data", "nextCursor"]
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -2084,7 +2268,9 @@
     },
     "/api/v1/health": {
       "get": {
-        "tags": ["system"],
+        "tags": [
+          "system"
+        ],
         "summary": "Service health probe",
         "responses": {
           "200": {
