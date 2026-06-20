@@ -52,3 +52,15 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
 } as const
 
 export const hasPermission = (role: Role, permission: Permission): boolean => ROLE_PERMISSIONS[role].includes(permission)
+
+// Token scopes follow from permissions, not from the role directly, so the two never drift: whoever may
+// RUN_SYNCS may read/write syncs; whoever may MANAGE_DIRECTORY may read the directory. A human session's
+// JWT carries the scopes its role implies (so the SAME scope gate protects both humans on the SPA and
+// machine application tokens); a plain user implies no scopes.
+const PERMISSION_SCOPES: Partial<Record<Permission, readonly TokenScope[]>> = {
+  [PERMISSIONS.RUN_SYNCS]: ["syncs:write", "syncs:read"],
+  [PERMISSIONS.MANAGE_DIRECTORY]: ["directory:read"],
+}
+
+// The de-duplicated set of scopes a role is entitled to, derived from its permissions.
+export const scopesForRole = (role: Role): TokenScope[] => [...new Set(ROLE_PERMISSIONS[role].flatMap((permission) => PERMISSION_SCOPES[permission] ?? []))]
