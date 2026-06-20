@@ -91,6 +91,30 @@ const createFirstOrganization = async (auth: ReturnType<typeof createAuth>, cred
   }
 }
 
+// Mirror the Better Auth organization into the app's own `organizations` table using the SAME id (read
+// back from the auth `organization` row by slug), so a JWT's orgId maps straight onto app data, and give
+// it a default entity that templates/assignments/employees attach to. Both inserts are idempotent.
+const provisionAppOrganization = async (pool: Pool, credentials: SeedCredentials): Promise<void> => {
+  try {
+    const found = await pool.query<{ id: string }>(`select id from "organization" where slug = $1 limit 1`, [credentials.organizationSlug])
+    const [organization] = found.rows
+    if (organization === undefined) {
+      throw new Error("could not resolve the created organization id")
+    }
+    await pool.query(`insert into "organizations" (id, name, slug) values ($1, $2, $3) on conflict (id) do nothing`, [
+      organization.id,
+      credentials.organizationName,
+      credentials.organizationSlug,
+    ])
+    await pool.query(
+      `insert into "entities" (org_id, name, slug) select $1, 'Default', 'default' where not exists (select 1 from "entities" where org_id = $1)`,
+      [organization.id],
+    )
+  } catch (error) {
+    throw new Error(`Failed to provision the app organization: ${getErrorMessage(error)}`)
+  }
+}
+
 // Orchestrate the seed as a clean checklist: guard, create owner, verify owner, create the org.
 const seedFirstOrganization = async (): Promise<void> => {
   const config = loadAuthConfig()
@@ -107,6 +131,7 @@ const seedFirstOrganization = async (): Promise<void> => {
     await ensureOwnerAccount(auth, credentials)
     await markOwnerVerified(pool, credentials.ownerEmail)
     await createFirstOrganization(auth, credentials)
+    await provisionAppOrganization(pool, credentials)
 
     process.stdout.write(`seed: created organization "${credentials.organizationName}" with owner ${credentials.ownerEmail}\n`)
   } finally {
