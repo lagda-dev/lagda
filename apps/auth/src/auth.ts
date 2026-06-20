@@ -1,3 +1,5 @@
+import { scopesForRole } from "@lagda/auth-contract"
+import type { Role } from "@lagda/core"
 import { betterAuth } from "better-auth"
 import { bearer, emailOTP, jwt, organization } from "better-auth/plugins"
 import { Pool } from "pg"
@@ -103,7 +105,10 @@ export const createAuth = ({ databaseUrl, baseUrl, trustedOrigins = DEFAULT_TRUS
         jwt: {
           definePayload: async ({ user }) => {
             const { organizationId, role } = await resolveActiveMembership(database, user.id)
-            return { sub: user.id, orgId: organizationId, role, scopes: [] as string[] }
+            // The session JWT carries the scopes the role implies, so the resource server's scope gate
+            // (which also guards machine application tokens) lets a human on the SPA call scoped routes.
+            const scopes = role === null ? [] : scopesForRole(role as Role)
+            return { sub: user.id, orgId: organizationId, role, scopes }
           },
         },
       }),
