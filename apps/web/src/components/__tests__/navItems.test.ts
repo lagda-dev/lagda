@@ -12,7 +12,7 @@ describe("navItemsForRole", () => {
     const labels = navItemsForRole(role).map((item) => item.label)
 
     // Assert
-    expect(labels).toEqual(["Dashboard", "Templates", "Assignments", "Employees", "Entities", "Audit events", "Settings"])
+    expect(labels).toEqual(["Dashboard", "Templates", "Assignments", "Synchronizations", "Employees", "Entities", "Audit events", "Settings"])
   })
 
   it("restricts a user to the surfaces their role unlocks", () => {
@@ -38,6 +38,7 @@ describe("navItemsForRole", () => {
     // Assert
     expect(labels).toContain("Templates")
     expect(labels).toContain("Assignments")
+    expect(labels).toContain("Synchronizations")
     expect(labels).toContain("Employees")
     expect(labels).not.toContain("Settings")
     expect(labels).not.toContain("Entities")

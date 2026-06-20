@@ -15,6 +15,7 @@ import { EmployeesPage } from "./pages/EmployeesPage"
 import { EntitiesPage } from "./pages/EntitiesPage"
 import { NotFoundPage } from "./pages/NotFoundPage"
 import { SettingsPage } from "./pages/SettingsPage"
+import { SynchronizationsPage } from "./pages/SynchronizationsPage"
 import { TemplatesPage } from "./pages/TemplatesPage"
 import { LoginPage } from "./pages/auth/LoginPage"
 import { VerifyOtpPage } from "./pages/auth/VerifyOtpPage"
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
               { path: "/templates", element: <TemplatesPage /> },
               { path: "/assignments", element: <AssignmentsPage /> },
             ],
+          },
+          {
+            element: <RequireRole permission={PERMISSIONS.RUN_SYNCS} />,
+            children: [{ path: "/synchronizations", element: <SynchronizationsPage /> }],
           },
           {
             element: <RequireRole permission={PERMISSIONS.READ_EMPLOYEES} />,

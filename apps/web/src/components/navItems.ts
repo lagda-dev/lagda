@@ -13,12 +13,13 @@ export type AppNavItem = {
 }
 
 // Only routes that exist today are listed — adding a nav item with no route 404s. The remaining
-// screens (My signature, Synchronizations, Directory, Members, Tokens) ship in later PRs; add the
-// nav item alongside its route then. (TODO: restore those items as their pages land.)
+// screens (My signature, Directory, Members, Tokens) ship in later PRs; add the nav item alongside its
+// route then. (TODO: restore those items as their pages land.)
 const NAV_CATALOGUE: readonly AppNavItem[] = [
   { label: "Dashboard", href: "/", permission: PERMISSIONS.VIEW_OWN_SIGNATURE },
   { label: "Templates", href: "/templates", permission: PERMISSIONS.MANAGE_TEMPLATES },
   { label: "Assignments", href: "/assignments", permission: PERMISSIONS.MANAGE_TEMPLATES },
+  { label: "Synchronizations", href: "/synchronizations", permission: PERMISSIONS.RUN_SYNCS },
   { label: "Employees", href: "/employees", permission: PERMISSIONS.READ_EMPLOYEES },
   { label: "Entities", href: "/entities", permission: PERMISSIONS.MANAGE_ENTITIES },
   { label: "Audit events", href: "/audit-events", permission: PERMISSIONS.MANAGE_ORG },
