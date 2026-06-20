@@ -1,0 +1,53 @@
+name: E2E
+
+# End-to-end smoke: boot the real deployable with `docker compose up` (the same path a self-hoster
+# runs) and drive it with Playwright. The smoke is intentionally minimal and unauthenticated — it
+# proves the stack serves the SPA and renders the sign-in page — so it needs no secrets or seed data.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  playwright:
+    name: Playwright smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browser
+        run: pnpm --filter @lagda/web exec playwright install --with-deps chromium
+      - name: Boot the stack
+        run: docker compose up -d --wait
+      - name: Run the smoke
+        run: pnpm --filter @lagda/web e2e
+        env:
+          E2E_BASE_URL: http://localhost:3000
+      - name: Dump stack logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Upload the Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          if-no-files-found: ignore
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

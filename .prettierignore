@@ -1,0 +1,6 @@
+# oxfmt reads this file for ignore patterns (in addition to .gitignore).
+#
+# The OpenAPI spec is a GENERATED artifact: `pnpm --filter @lagda/server openapi` writes it with
+# JSON.stringify and the docs.yml drift gate diffs that exact output. oxfmt must not reformat it, or
+# the committed copy would never match what CI regenerates.
+apps/server/openapi.json

@@ -1,0 +1,67 @@
+name: Visual
+
+# Visual regression with Argos: capture the SPA's key screens with Playwright and upload them to Argos,
+# which surfaces pixel diffs against the baseline in the PR. The whole job is gated on the ARGOS_TOKEN
+# secret, so forks and contributors without it get a green no-op rather than a hard failure.
+#
+# Setup: create an Argos project (https://argos-ci.com), then add its token as the ARGOS_TOKEN repo
+# secret. New screens are covered by adding an `argosScreenshot(page, "<name>")` to apps/web/e2e/visual.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  argos:
+    name: Visual regression (Argos)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
+    steps:
+      - name: Skip when ARGOS_TOKEN is not configured
+        if: env.ARGOS_TOKEN == ''
+        run: echo "ARGOS_TOKEN is not set — skipping visual regression (expected on forks)."
+      - uses: actions/checkout@v4
+        if: env.ARGOS_TOKEN != ''
+        with:
+          # Argos compares against the baseline branch, which needs the full git history.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        if: env.ARGOS_TOKEN != ''
+      - uses: actions/setup-node@v4
+        if: env.ARGOS_TOKEN != ''
+        with:
+          node-version: "lts/*"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: env.ARGOS_TOKEN != ''
+      - name: Install Playwright browser
+        if: env.ARGOS_TOKEN != ''
+        run: pnpm --filter @lagda/web exec playwright install --with-deps chromium
+      - name: Boot the stack
+        if: env.ARGOS_TOKEN != ''
+        run: docker compose up -d --wait
+      - name: Capture visual snapshots
+        if: env.ARGOS_TOKEN != ''
+        run: pnpm --filter @lagda/web e2e:visual
+        env:
+          E2E_BASE_URL: http://localhost:3000
+      - name: Upload to Argos
+        if: env.ARGOS_TOKEN != ''
+        # Upload via the Argos CLI (run step, not a `uses:` — GitHub resolves every referenced action at
+        # job setup even when `if`-skipped, so a token-gated job must not name an external action). The
+        # CLI reads ARGOS_TOKEN from the environment.
+        run: pnpm --filter @lagda/web exec argos upload screenshots
+      - name: Tear down
+        if: always()
+        run: docker compose down -v || true
