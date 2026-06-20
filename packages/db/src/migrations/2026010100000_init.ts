@@ -9,7 +9,9 @@ import { type Kysely, sql } from "kysely"
 const createOrganizations = async (db: Kysely<unknown>): Promise<void> => {
   await db.schema
     .createTable("organizations")
-    .addColumn("id", "uuid", (col) => col.primaryKey().defaultTo(sql`gen_random_uuid()`))
+    // Text id, not a generated UUID: the app organization shares the identity of the Better Auth
+    // organization (a nanoid), so a JWT's orgId maps directly onto these rows. The seed inserts it.
+    .addColumn("id", "text", (col) => col.primaryKey())
     .addColumn("name", "text", (col) => col.notNull())
     .addColumn("slug", "text", (col) => col.notNull().unique())
     .addColumn("created_at", "timestamptz", (col) => col.notNull().defaultTo(sql`now()`))
@@ -21,7 +23,7 @@ const createEntities = async (db: Kysely<unknown>): Promise<void> => {
   await db.schema
     .createTable("entities")
     .addColumn("id", "uuid", (col) => col.primaryKey().defaultTo(sql`gen_random_uuid()`))
-    .addColumn("org_id", "uuid", (col) => col.notNull().references("organizations.id").onDelete("cascade"))
+    .addColumn("org_id", "text", (col) => col.notNull().references("organizations.id").onDelete("cascade"))
     .addColumn("name", "text", (col) => col.notNull())
     .addColumn("slug", "text", (col) => col.notNull())
     .addColumn("settings", "jsonb", (col) => col.notNull().defaultTo(sql`'{}'::jsonb`))
@@ -80,7 +82,7 @@ const createSyncRuns = async (db: Kysely<unknown>): Promise<void> => {
   await db.schema
     .createTable("sync_runs")
     .addColumn("id", "uuid", (col) => col.primaryKey().defaultTo(sql`gen_random_uuid()`))
-    .addColumn("org_id", "uuid", (col) => col.notNull().references("organizations.id").onDelete("cascade"))
+    .addColumn("org_id", "text", (col) => col.notNull().references("organizations.id").onDelete("cascade"))
     .addColumn("target", "jsonb", (col) => col.notNull().defaultTo(sql`'{}'::jsonb`))
     .addColumn("template_id", "uuid", (col) => col.references("templates.id").onDelete("set null"))
     .addColumn("status", "text", (col) => col.notNull())
@@ -115,7 +117,7 @@ const createAuditLog = async (db: Kysely<unknown>): Promise<void> => {
   await db.schema
     .createTable("audit_log")
     .addColumn("id", "uuid", (col) => col.primaryKey().defaultTo(sql`gen_random_uuid()`))
-    .addColumn("org_id", "uuid", (col) => col.notNull().references("organizations.id").onDelete("cascade"))
+    .addColumn("org_id", "text", (col) => col.notNull().references("organizations.id").onDelete("cascade"))
     .addColumn("actor", "text", (col) => col.notNull())
     .addColumn("action", "text", (col) => col.notNull())
     .addColumn("target", "text", (col) => col.notNull())
@@ -131,7 +133,7 @@ const createNotificationChannels = async (db: Kysely<unknown>): Promise<void> =>
   await db.schema
     .createTable("notification_channels")
     .addColumn("id", "uuid", (col) => col.primaryKey().defaultTo(sql`gen_random_uuid()`))
-    .addColumn("org_id", "uuid", (col) => col.notNull().references("organizations.id").onDelete("cascade"))
+    .addColumn("org_id", "text", (col) => col.notNull().references("organizations.id").onDelete("cascade"))
     .addColumn("type", "text", (col) => col.notNull())
     .addColumn("encrypted_config", "text", (col) => col.notNull())
     .addColumn("subscriptions", "jsonb", (col) => col.notNull().defaultTo(sql`'[]'::jsonb`))
@@ -146,7 +148,7 @@ const createDirectoryConnections = async (db: Kysely<unknown>): Promise<void> =>
   await db.schema
     .createTable("directory_connections")
     .addColumn("id", "uuid", (col) => col.primaryKey().defaultTo(sql`gen_random_uuid()`))
-    .addColumn("org_id", "uuid", (col) => col.notNull().references("organizations.id").onDelete("cascade"))
+    .addColumn("org_id", "text", (col) => col.notNull().references("organizations.id").onDelete("cascade"))
     .addColumn("provider", "text", (col) => col.notNull())
     .addColumn("encrypted_credentials", "text", (col) => col.notNull())
     .addColumn("created_at", "timestamptz", (col) => col.notNull().defaultTo(sql`now()`))
