@@ -27,6 +27,7 @@
     "react-router-dom": "^6.27.0"
   },
   "devDependencies": {
+    "@argos-ci/cli": "^2.0.0",
     "@argos-ci/playwright": "^5.0.0",
     "@lagda/server": "workspace:*",
     "@playwright/test": "^1.48.0",

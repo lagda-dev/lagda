@@ -58,10 +58,10 @@ jobs:
           E2E_BASE_URL: http://localhost:3000
       - name: Upload to Argos
         if: env.ARGOS_TOKEN != ''
-        uses: argos-ci/argos-action@v2
-        with:
-          token: ${{ secrets.ARGOS_TOKEN }}
-          path: apps/web/screenshots
+        # Upload via the Argos CLI (run step, not a `uses:` — GitHub resolves every referenced action at
+        # job setup even when `if`-skipped, so a token-gated job must not name an external action). The
+        # CLI reads ARGOS_TOKEN from the environment.
+        run: pnpm --filter @lagda/web exec argos upload screenshots
       - name: Tear down
         if: always()
         run: docker compose down -v || true
