@@ -70,20 +70,30 @@ TypeScript · Node.js · [Hono](https://hono.dev) · [Vite](https://vitejs.dev) 
 
 ## Development (contributing)
 
-Running the app doesn't need a toolchain — but **contributing** (hot-reload, tests, linting)
-does: **Node 20+** and **pnpm 9+**.
+Hot-reload development runs entirely in Docker — **no host Node or pnpm required**:
+
+```bash
+docker compose -f docker-compose.dev.yml up        # Postgres + migrate + seed + the three watch servers
+```
+
+This brings up Postgres, applies the schema, seeds the first org/owner, and starts all three apps
+with live reload: **web (Vite HMR) on http://localhost:5173**, server on :3000, auth on :3100. The
+SPA proxies `/api` → :3000 and `/api/auth` → :3100. Edit any file under `apps/` or `packages/` and the
+change reloads in the running container. Sign in as `owner@lagda.local` / `lagda-dev-owner`; the dev
+email-OTP is printed to the auth service logs:
+
+```bash
+docker compose -f docker-compose.dev.yml logs -f auth   # watch for the one-time code on sign-in
+docker compose -f docker-compose.dev.yml down -v        # stop and wipe the dev database
+```
+
+### Running the toolchain (tests, lint, types)
+
+The verification toolchain still uses **Node 20+** and **pnpm 9+** on the host:
 
 ```bash
 pnpm install
-pnpm dev          # hot-reload: web on :5173 (proxies the API/auth), plus the watch servers
 pnpm check        # full verification: lint + typecheck + test + build
-```
-
-`pnpm dev` serves the SPA from Vite on **http://localhost:5173** and proxies `/api` → :3000
-and `/api/auth` → :3100, so point it at a database first — the simplest is to leave
-`docker compose up` running and develop against it.
-
-```bash
 pnpm test         # run tests
 pnpm typecheck    # type check
 pnpm lint         # lint with oxlint
