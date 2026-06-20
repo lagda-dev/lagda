@@ -87,7 +87,9 @@ const createSyncRuns = async (db: Kysely<unknown>): Promise<void> => {
     .addColumn("template_id", "uuid", (col) => col.references("templates.id").onDelete("set null"))
     .addColumn("status", "text", (col) => col.notNull())
     .addColumn("counts", "jsonb", (col) => col.notNull().defaultTo(sql`'{}'::jsonb`))
-    .addColumn("created_by", "uuid", (col) => col.notNull())
+    // Text, not uuid: this holds the Better Auth user id (a nanoid) from the JWT `sub`, the same
+    // identity scheme as organizations.id — never a generated uuid.
+    .addColumn("created_by", "text", (col) => col.notNull())
     .addColumn("created_at", "timestamptz", (col) => col.notNull().defaultTo(sql`now()`))
     .addColumn("updated_at", "timestamptz", (col) => col.notNull().defaultTo(sql`now()`))
     .execute()
