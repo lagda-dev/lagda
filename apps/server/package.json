@@ -11,6 +11,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsx watch src/server.ts",
+    "openapi": "tsx scripts/emitOpenapi.ts",
     "start": "node dist/server.js",
     "lint": "oxlint",
     "typecheck": "tsc --noEmit",
