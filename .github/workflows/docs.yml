@@ -1,0 +1,40 @@
+name: Docs
+
+# OpenAPI drift gate: the committed apps/server/openapi.json must always match what the route
+# definitions produce. Regenerate the spec on every change and fail if it differs from the committed
+# copy, so an endpoint change can never silently skip its API-doc update.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  openapi-drift:
+    name: OpenAPI spec is up to date
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Regenerate the OpenAPI document
+        run: pnpm --filter @lagda/server openapi
+      - name: Fail if the committed spec is stale
+        run: |
+          if ! git diff --exit-code apps/server/openapi.json; then
+            echo "::error file=apps/server/openapi.json::OpenAPI spec is out of date. Run 'pnpm --filter @lagda/server openapi' and commit the result."
+            exit 1
+          fi
