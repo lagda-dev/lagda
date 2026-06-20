@@ -19,6 +19,8 @@ storybook-static
 # Test/build artifacts
 playwright-report
 test-results
+# Argos visual-regression screenshots (captured in CI, uploaded — never committed)
+screenshots
 
 # Playwright MCP session artifacts
 .playwright-mcp
