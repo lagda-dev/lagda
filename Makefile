@@ -19,8 +19,8 @@ help: ## List the available targets
 dev: ## Start the dev stack with live reload (logs attached; Ctrl-C to stop)
 	$(DEV) up
 
-dev-build: ## Rebuild the dev image, then start the dev stack (after dependency changes)
-	$(DEV) up --build
+dev-build: ## Rebuild the dev image + renew node_modules volumes, then start (run after dependency changes)
+	$(DEV) up --build --renew-anon-volumes
 
 dev-down: ## Stop the dev stack
 	$(DEV) down

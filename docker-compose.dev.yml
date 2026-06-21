@@ -70,10 +70,11 @@ services:
     networks:
       - lagda-dev
 
-  # One-shot: apply the app (Kysely) + Better Auth schemas, then exit.
+  # One-shot: apply the app (Kysely) + Better Auth schemas, then exit. No fixed container_name: a one-shot
+  # lingers as an exited container, and a pinned name conflicts when the stack is recreated (e.g. a rebuild
+  # after a dependency change). Compose auto-names it instead, so recreate is always clean.
   migrate:
     <<: *dev-build
-    container_name: lagda-dev-migrate
     environment:
       DATABASE_URL: *internal-database-url
       AUTH_BASE_URL: http://auth:3100
@@ -91,7 +92,6 @@ services:
   # Idempotent — exits early if an organization already exists.
   seed:
     <<: *dev-build
-    container_name: lagda-dev-seed
     environment:
       DATABASE_URL: *internal-database-url
       AUTH_BASE_URL: http://auth:3100
