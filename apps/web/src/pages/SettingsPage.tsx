@@ -14,15 +14,19 @@ export const SettingsPage = () => {
   const updateOrganization = useUpdateOrganization()
 
   const organization = organizationsQuery.data?.data[0] ?? null
+  const persistedName = organization?.name ?? null
 
   const [name, setName] = useState("")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
 
-  // Seed the editable name once the organization resolves; keep it controlled thereafter so edits persist.
+  // Seed the editable name from the PERSISTED name (a primitive), not the organization object. Keying on
+  // the object re-ran on every refetch (window refocus, post-save invalidation) and clobbered in-progress
+  // edits, because a refetch yields a new object even when the name is unchanged. Keying on the string
+  // only reseeds when the persisted name actually changes.
   useEffect(() => {
-    if (organization !== null) setName(organization.name)
-  }, [organization])
+    if (persistedName !== null) setName(persistedName)
+  }, [persistedName])
 
   const submitName = async (organizationId: string) => {
     setErrorMessage(null)
