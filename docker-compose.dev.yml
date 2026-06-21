@@ -109,6 +109,18 @@ services:
     networks:
       - lagda-dev
 
+  # Dev SMTP catcher: accepts the OTP emails the auth service sends and shows them in a web UI. Nothing
+  # leaves your machine. SMTP on :1025 (auth points here), web UI on http://localhost:8025.
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: lagda-dev-mailhog
+    restart: unless-stopped
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+    networks:
+      - lagda-dev
+
   # Long-running: the identity & token service, hot-reloaded with `tsx watch`.
   auth:
     <<: *dev-build
@@ -119,6 +131,12 @@ services:
       PORT: "3100"
       DATABASE_URL: *internal-database-url
       AUTH_BASE_URL: http://localhost:3100
+      # Deliver OTP email to MailHog (the dev SMTP catcher below) so sign-up/sign-in emails are viewable
+      # at http://localhost:8025 instead of just the logs. MailHog needs no credentials. (owner@lagda.local
+      # is still the fixed code 123456, so the common case needs no inbox at all.) Override to a real relay.
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_FROM: ${SMTP_FROM:-Lagda (dev) <no-reply@lagda.local>}
       # tsx watch relies on chokidar; polling is required for bind-mount edits to be seen in Docker.
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "300"
@@ -127,6 +145,8 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+      mailhog:
+        condition: service_started
     ports:
       - "${AUTH_PORT:-3100}:3100"
     healthcheck:
