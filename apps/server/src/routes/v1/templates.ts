@@ -12,6 +12,13 @@ import type { ApiDependencies } from "./dependencies"
 // Create/update/delete bodies are Zod-validated at the boundary; the `entityId` and `id` are checked
 // against the caller's org in the data layer so one tenant cannot write into another.
 
+// Cap the MJML source so an authenticated client cannot post a multi-megabyte body that the renderer
+// (`mjml2html`, CPU-heavy) would then compile — an unbounded-input exhaustion vector (§5). 256 KiB is
+// far above any real signature template while keeping the compile bounded.
+const MAX_MJML_SOURCE_LENGTH = 256 * 1024
+// A signature template name is a short label; bound it too rather than accept arbitrary length.
+const MAX_TEMPLATE_NAME_LENGTH = 200
+
 const templateSchema = z
   .object({
     id: z.string(),
@@ -23,16 +30,16 @@ const templateSchema = z
 const createTemplateBodySchema = z
   .object({
     entityId: z.string().min(1),
-    name: z.string().min(1),
-    mjmlSource: z.string().min(1),
+    name: z.string().min(1).max(MAX_TEMPLATE_NAME_LENGTH),
+    mjmlSource: z.string().min(1).max(MAX_MJML_SOURCE_LENGTH),
   })
   .openapi("CreateTemplate")
 
 // At least one editable field must be present so a PATCH is never a no-op.
 const updateTemplateBodySchema = z
   .object({
-    name: z.string().min(1).optional(),
-    mjmlSource: z.string().min(1).optional(),
+    name: z.string().min(1).max(MAX_TEMPLATE_NAME_LENGTH).optional(),
+    mjmlSource: z.string().min(1).max(MAX_MJML_SOURCE_LENGTH).optional(),
   })
   .refine((body) => body.name !== undefined || body.mjmlSource !== undefined, { message: "At least one of name or mjmlSource is required" })
   .openapi("UpdateTemplate")
