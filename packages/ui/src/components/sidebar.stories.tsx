@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { LayoutDashboard, Mail, Settings, Users } from "lucide-react"
-import { Sidebar, type SidebarNavItem } from "./sidebar"
+import { Logo } from "./logo"
+import { Sidebar, type SidebarNavGroup, type SidebarNavItem } from "./sidebar"
 
 const meta: Meta<typeof Sidebar> = {
   title: "App Shell/Sidebar",
@@ -23,7 +24,34 @@ const items: SidebarNavItem[] = [
 export const Default: Story = {
   render: () => (
     <div className="h-[480px]">
-      <Sidebar header="Lagda" items={items} footer={<span className="px-3 text-xs text-muted-foreground">v0.1.0</span>} />
+      <Sidebar header={<Logo size={24} />} items={items} footer={<span className="px-3 text-xs text-muted-foreground">v0.1.0</span>} />
+    </div>
+  ),
+}
+
+const groups: SidebarNavGroup[] = [
+  { label: "Overview", items: [{ label: "Dashboard", href: "#dashboard", isActive: true }] },
+  {
+    label: "Signatures",
+    items: [
+      { label: "Templates", href: "#templates" },
+      { label: "Assignments", href: "#assignments" },
+      { label: "Synchronizations", href: "#synchronizations" },
+    ],
+  },
+  {
+    label: "Directory",
+    items: [
+      { label: "Employees", href: "#employees" },
+      { label: "Entities", href: "#entities" },
+    ],
+  },
+]
+
+export const Grouped: Story = {
+  render: () => (
+    <div className="h-[480px]">
+      <Sidebar header={<Logo size={24} />} groups={groups} footer={<span className="px-3 font-mono text-xs text-faint">v0.1.0-beta</span>} />
     </div>
   ),
 }
