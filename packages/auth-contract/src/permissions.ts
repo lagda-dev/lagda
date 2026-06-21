@@ -22,8 +22,8 @@ export type TokenScope = "syncs:write" | "syncs:read" | "directory:read"
 
 export const TOKEN_SCOPES = ["syncs:write", "syncs:read", "directory:read"] as const
 
-// Owner sees everything; admin manages templates/assignments, runs and reads syncs, reads employees,
-// and can view their own signature; a plain user can only view their own signature.
+// Owner sees everything; admin manages templates/assignments + application tokens, runs and reads syncs,
+// reads employees, and can view their own signature; a plain user can only view their own signature.
 const OWNER_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.MANAGE_ORG,
   PERMISSIONS.MANAGE_ENTITIES,
@@ -38,6 +38,7 @@ const OWNER_PERMISSIONS: readonly Permission[] = [
 
 const ADMIN_PERMISSIONS: readonly Permission[] = [
   PERMISSIONS.MANAGE_TEMPLATES,
+  PERMISSIONS.MANAGE_TOKENS,
   PERMISSIONS.RUN_SYNCS,
   PERMISSIONS.READ_EMPLOYEES,
   PERMISSIONS.VIEW_OWN_SIGNATURE,
