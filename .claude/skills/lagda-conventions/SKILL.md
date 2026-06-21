@@ -93,7 +93,7 @@ API-client packages (`db`, `connectors`, and the server's resource modules); `ui
 - **Backend:** Hono (`@hono/node-server`); serve SPA via `serve-static` in prod.
 - **Frontend:** Vite + React + **React Router**; data fetching via TanStack Query over the Hono RPC client.
 - **Styling:** Tailwind, **Tailwind-native**, via the shared preset in `packages/ui`. Do not introduce a second styling system.
-- **Components:** **shadcn/ui owned in `packages/ui`** (Radix + Tailwind + `cva`); `neutral` base, `new-york` style, **minimalist, neutral aesthetic** (neutral grays, near-black primary, 1px borders over shadows, small radius, Inter, generous whitespace). The SPA imports all UI from `packages/ui` — no duplicated primitives.
+- **Components:** **shadcn/ui owned in `packages/ui`** (Radix + Tailwind + `cva`); `neutral` base, `new-york` style, **minimalist, monochrome aesthetic** (cool-neutral grays, a single near-black ink, 1px borders over shadows, 8px radius, **Geist** for the interface and **Geist Mono** for data/metrics/identifiers, generous whitespace; **status colors — success/warning/destructive — are the only color in the system**). Fonts are self-hosted via Fontsource (no external CDN). The SPA imports all UI from `packages/ui` — no duplicated primitives.
 - **Data access:** **Kysely, no ORM. PostgreSQL only** — connection via `DATABASE_URL`; no other SQL dialect is supported (MySQL/SQLite are explicitly out of scope). Migrations via Kysely `Migrator`; regenerate the `Database` type with `kysely-codegen`. Never add an ORM.
 - **Validation:** Zod everywhere (see §4).
 - **Auth:** Better Auth in `apps/auth` only.

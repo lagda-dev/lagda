@@ -23,9 +23,12 @@ imports every primitive from `@lagda/ui` — never duplicate primitives in
    organized by domain; small focused units (§3).
 
 2. **Style with the design tokens** via the shared Tailwind preset and the `cn`
-   util — Tailwind-native, no second styling system. Aesthetic: neutral grays,
-   near-black primary, **1px borders over shadows**, **small radius**, **Inter**,
-   generous whitespace.
+   util — Tailwind-native, no second styling system. Aesthetic: cool-neutral
+   grays, a single near-black ink, **1px borders over shadows**, **8px radius**,
+   **Geist** (`font-sans`) for the interface and **Geist Mono** (`font-mono`) for
+   data/metrics/identifiers, generous whitespace. **Status colors
+   (success/warning/destructive) are the only color** — reach for the `StatusBadge`
+   primitive rather than re-styling pills inline.
 
 3. **Follow the code style** (§3): `const` + arrow functions only (no
    `function`, no `var`, no `any`); no semicolons, double quotes (`oxfmt` owns
@@ -51,8 +54,8 @@ imports every primitive from `@lagda/ui` — never duplicate primitives in
 
 - [ ] Component lives in `packages/ui` (shadcn `new-york` / `neutral`), no
       `apps/web` duplication
-- [ ] Design tokens via shared Tailwind preset + `cn`; 1px borders, small
-      radius, Inter, neutral grays
+- [ ] Design tokens via shared Tailwind preset + `cn`; 1px borders, 8px radius,
+      Geist / Geist Mono, cool-neutral grays, status colors only
 - [ ] Code style: const+arrow, no semicolons, double quotes, `import type`
 - [ ] Exported from `src/ui.ts`
 - [ ] Storybook story covers main variants (Argos baseline)
