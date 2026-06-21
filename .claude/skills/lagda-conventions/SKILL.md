@@ -227,7 +227,7 @@ Code reads like a story; each function explains one part of it.
 ## 15. Review-derived anti-patterns (must-avoid)
 
 These bug classes shipped (or nearly shipped) once and must never recur — scan every change
-against them before writing and before committing. Each is a *category*, not a single mistake.
+against them before writing and before committing. Each is a _category_, not a single mistake.
 
 1. **Security/debug toggles FAIL CLOSED.** Never gate a dangerous affordance with a negative env
    check (`NODE_ENV !== "production"`) — an unset/misspelled env then enables it in prod. Use a
