@@ -2,7 +2,7 @@ import { createMiddleware } from "hono/factory"
 import { hasPermission, parseClaims } from "@lagda/auth-contract"
 import type { Permission, TokenClaims, TokenScope } from "@lagda/auth-contract"
 import { sendApiError } from "../infrastructure/errors"
-import { getErrorMessage } from "../infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import { AUTH_CONTEXT_KEY } from "./authContext"
 import type { TokenVerifier } from "./authContext"
 

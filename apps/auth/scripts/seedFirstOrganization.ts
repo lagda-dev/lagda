@@ -1,6 +1,6 @@
 import { Pool } from "pg"
 import { createAuth } from "../src/auth"
-import { getErrorMessage } from "../src/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import { loadAuthConfig } from "../src/loadAuthConfig"
 import { provisionAppOrganization } from "../src/provisionAppOrganization"
 

@@ -1,10 +1,9 @@
 import { promises as fs } from "node:fs"
 import * as path from "node:path"
 import { fileURLToPath } from "node:url"
-import { loadConfig } from "@lagda/core"
+import { getErrorMessage, loadConfig } from "@lagda/core"
 import { FileMigrationProvider, Migrator } from "kysely"
 import { createDatabase } from "./db"
-import { getErrorMessage } from "./infrastructure/getErrorMessage"
 
 const MIGRATIONS_DIRECTORY = path.join(path.dirname(fileURLToPath(import.meta.url)), "migrations")
 

@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { getErrorMessage } from "../infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 
 // pg-boss job name. Dispatches one notification to one configured channel.
 // Retry and rate-limiting are the queue's concern, not the handler's.

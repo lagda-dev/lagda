@@ -1,4 +1,4 @@
-import { getErrorMessage } from "../infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import type { MailTransport } from "../infrastructure/smtpTransport"
 import type { Mailer } from "./mailer"
 

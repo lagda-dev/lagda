@@ -17,7 +17,6 @@ export default defineConfig({
         "src/otpEmailSender.ts",
         "src/provisionAppOrganization.ts",
         "src/resolveOtpSender.ts",
-        "src/getErrorMessage.ts",
         "src/loadAuthConfig.ts",
       ],
       // server.ts/app.ts/auth.ts need a live runtime. SMTP transport mechanics now live in @lagda/email

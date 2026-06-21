@@ -1,5 +1,5 @@
 import type { Pool } from "pg"
-import { getErrorMessage } from "./getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 
 // The minimal shape needed to mirror a Better Auth organization into the app schema.
 export type AppOrganizationInput = {

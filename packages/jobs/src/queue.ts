@@ -1,5 +1,5 @@
 import PgBoss from "pg-boss"
-import { getErrorMessage } from "./infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 
 // The Queue abstraction decouples job dispatch/consumption from the backing engine.
 // pg-boss (Postgres) is the default, but a non-Postgres deployment can plug in an

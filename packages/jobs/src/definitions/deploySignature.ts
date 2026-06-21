@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { getErrorMessage } from "../infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 
 // pg-boss job name. Deploys one rendered signature to one employee's mailbox.
 export const DEPLOY_SIGNATURE_JOB = "deploy-signature"

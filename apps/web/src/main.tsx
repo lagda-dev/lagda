@@ -1,3 +1,5 @@
+import "@fontsource-variable/geist"
+import "@fontsource-variable/geist-mono"
 import "@lagda/ui/styles.css"
 import "./index.css"
 import { PERMISSIONS } from "@lagda/auth-contract"

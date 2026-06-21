@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
 import { PERMISSIONS } from "@lagda/auth-contract"
 import type { Context, Schema } from "hono"
-import { getErrorMessage } from "../../infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import type { AuthVariables } from "../../middleware/authContext"
 import { claimsFrom, failOutcome, itemOutcome, listOutcome, okOutcome, paginationFrom } from "./handlers"
 import type { Outcome } from "./handlers"

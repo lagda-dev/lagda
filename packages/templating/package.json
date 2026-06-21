@@ -13,6 +13,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
+    "@lagda/core": "workspace:*",
     "mjml": "^4.15.3"
   },
   "devDependencies": {

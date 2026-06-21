@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { getErrorMessage } from "../infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 
 // pg-boss job name. The verb is "synchronize" in code, but the resource is "directory":
 // this job pulls the directory and fans out one deploy job per employee.

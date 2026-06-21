@@ -1,6 +1,6 @@
 import { google, type Auth } from "googleapis"
 import type { GoogleDirectoryUser } from "../mappers/googleUserMapper"
-import { getErrorMessage } from "../getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 
 // The two Google API calls the connector depends on, behind a narrow port.
 // Keeping this interface separate from the real implementation lets tests inject a mock

@@ -1,5 +1,5 @@
 import type { Context } from "hono"
-import { getErrorMessage } from "../../infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import type { CreateSyncRunInput, SyncTarget } from "../../repositories/types"
 import { claimsFrom, failOutcome, okOutcome } from "./handlers"
 import type { Outcome } from "./handlers"

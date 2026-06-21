@@ -1,7 +1,7 @@
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node"
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http"
 import { NodeSDK } from "@opentelemetry/sdk-node"
-import { getErrorMessage } from "./getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 
 // The OpenTelemetry tracing bootstrap (lagda-conventions §9). EXCLUDED from coverage: it loads the
 // Node auto-instrumentations and, when an OTLP endpoint is configured, exports spans to a live

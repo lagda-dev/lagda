@@ -1,7 +1,7 @@
 import type { ConnectorInterface, DirectoryEmployee } from "../types"
 import type { GoogleClient } from "./googleClient"
 import { toDirectoryEmployee } from "../mappers/googleUserMapper"
-import { getErrorMessage } from "../getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 
 // The Google Workspace connector. The client is injected so the connector is fully mockable:
 // the implementation holds the orchestration; the client holds the I/O.

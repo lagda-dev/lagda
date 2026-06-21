@@ -1,7 +1,7 @@
 import type { Context } from "hono"
 import { buildApiError } from "../../infrastructure/errors"
 import type { ApiError, ApiErrorCode } from "../../infrastructure/errors"
-import { getErrorMessage } from "../../infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import { paginationQuerySchema } from "../../infrastructure/pagination"
 import type { Page, PaginationQuery } from "../../infrastructure/pagination"
 import { AUTH_CONTEXT_KEY } from "../../middleware/authContext"
