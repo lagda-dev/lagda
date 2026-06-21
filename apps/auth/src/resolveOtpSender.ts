@@ -26,5 +26,5 @@ export const resolveOtpSender = (
     )
   }
 
-  return createLoggingOtpSender()
+  return createLoggingOtpSender(env)
 }
