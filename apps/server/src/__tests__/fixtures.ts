@@ -3,6 +3,7 @@ import type { TokenClaims } from "@lagda/auth-contract"
 import type { TokenVerifier } from "../middleware/authContext"
 import type { Page } from "../infrastructure/pagination"
 import type { ApiDependencies } from "../routes/v1/dependencies"
+import type { Repository, SyncEnqueuer } from "../repositories/repository"
 import type {
   AssignmentRecord,
   AuditEventRecord,
@@ -11,9 +12,7 @@ import type {
   EmployeeRecord,
   EntityRecord,
   OrganizationRecord,
-  Repository,
   RoleRecord,
-  SyncEnqueuer,
   SyncRunRecord,
   TemplateRecord,
 } from "../repositories/types"

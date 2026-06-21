@@ -25,8 +25,8 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       // Excluded from coverage:
       // - server.ts: production wiring, started by integration not unit tests.
-      // - repositories/kyselyRepository.ts: requires a live Postgres; verified by integration tests.
-      //   Handlers are unit-tested against the mock repository instead.
+      // - repositories/**: the Kysely data layer (one directory per repository) requires a live Postgres;
+      //   verified by integration tests. Handlers are unit-tested against the mock repository instead.
       // - middleware/jwksVerifier.ts: performs real network JWKS fetches (jose); the RBAC decision
       //   logic is unit-tested against an injected mock verifier.
       // - infrastructure/rateLimit.ts: thin wrapper over `hono-rate-limiter`, exercised against the
@@ -38,7 +38,7 @@ export default defineConfig({
         // telemetry.ts: import-first OTel bootstrap; needs a live OTLP collector, so it is verified
         // by the package's no-op path rather than unit tests here.
         "src/telemetry.ts",
-        "src/repositories/kyselyRepository.ts",
+        "src/repositories/**",
         "src/middleware/jwksVerifier.ts",
         "src/infrastructure/rateLimit.ts",
       ],

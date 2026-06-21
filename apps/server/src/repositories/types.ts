@@ -1,5 +1,3 @@
-import type { Page, PaginationQuery } from "../infrastructure/pagination"
-
 // The synchronization run lifecycle, mirrored from the `@lagda/db` schema's `SyncRunStatus`. Inlined
 // here (not imported) because the public API contract is the source of truth for the wire shape and
 // the db package does not re-export the literal union from its entry point.
@@ -153,46 +151,5 @@ export type UpdateOrganizationInput = {
   name?: string
 }
 
-// --- The contract ---
-// Lists take a validated `PaginationQuery` and return a `Page`. Detail reads return `null` when the
-// resource does not exist (the handler translates that to a 404 envelope).
-export type Repository = {
-  listOrganizations: (orgId: string, query: PaginationQuery) => Promise<Page<OrganizationRecord>>
-  getOrganization: (orgId: string, id: string) => Promise<OrganizationRecord | null>
-  updateOrganization: (input: UpdateOrganizationInput) => Promise<OrganizationRecord | null>
-
-  listEntities: (orgId: string, query: PaginationQuery) => Promise<Page<EntityRecord>>
-  getEntity: (orgId: string, id: string) => Promise<EntityRecord | null>
-  createEntity: (input: CreateEntityInput) => Promise<EntityRecord>
-  updateEntity: (input: UpdateEntityInput) => Promise<EntityRecord | null>
-
-  listEmployees: (orgId: string, query: PaginationQuery) => Promise<Page<EmployeeRecord>>
-  getEmployee: (orgId: string, id: string) => Promise<EmployeeRecord | null>
-
-  listTemplates: (orgId: string, query: PaginationQuery) => Promise<Page<TemplateRecord>>
-  getTemplate: (orgId: string, id: string) => Promise<TemplateRecord | null>
-  createTemplate: (input: CreateTemplateInput) => Promise<TemplateRecord | null>
-  updateTemplate: (input: UpdateTemplateInput) => Promise<TemplateRecord | null>
-  deleteTemplate: (orgId: string, id: string) => Promise<boolean>
-
-  listAssignments: (orgId: string, query: PaginationQuery) => Promise<Page<AssignmentRecord>>
-  getAssignment: (orgId: string, id: string) => Promise<AssignmentRecord | null>
-  createAssignment: (input: CreateAssignmentInput) => Promise<AssignmentRecord | null>
-  deleteAssignment: (orgId: string, id: string) => Promise<boolean>
-
-  listDepartments: (orgId: string, query: PaginationQuery) => Promise<Page<DepartmentRecord>>
-  listRoles: (orgId: string, query: PaginationQuery) => Promise<Page<RoleRecord>>
-  listAuditEvents: (orgId: string, query: PaginationQuery) => Promise<Page<AuditEventRecord>>
-
-  listSyncRuns: (orgId: string, query: PaginationQuery) => Promise<Page<SyncRunRecord>>
-  getSyncRun: (orgId: string, id: string) => Promise<SyncRunRecord | null>
-  createSyncRun: (input: CreateSyncRunInput) => Promise<SyncRunRecord>
-  cancelSyncRun: (orgId: string, id: string) => Promise<SyncRunRecord | null>
-  listDeployments: (orgId: string, syncRunId: string, query: PaginationQuery) => Promise<Page<DeploymentRecord>>
-}
-
-// The job-enqueue surface a synchronization route needs. Injected so the route is decoupled from the
-// concrete pg-boss queue and unit-testable with a spy.
-export type SyncEnqueuer = {
-  enqueueDirectorySync: (input: { organizationId: string; entityId: string; syncRunId: string }) => Promise<void>
-}
+// The data-access API (`Repository`) and the job-enqueue contract (`SyncEnqueuer`) live in
+// `repository.ts` — this file holds only the record/input shapes those contracts are built from.
