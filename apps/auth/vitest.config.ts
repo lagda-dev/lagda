@@ -14,15 +14,14 @@ export default defineConfig({
         "src/applicationTokens.ts",
         "src/otpSender.ts",
         "src/otpGenerator.ts",
+        "src/otpEmailSender.ts",
         "src/provisionAppOrganization.ts",
-        "src/smtpConfig.ts",
-        "src/smtpOtpSender.ts",
         "src/resolveOtpSender.ts",
         "src/getErrorMessage.ts",
         "src/loadAuthConfig.ts",
       ],
-      // server.ts/app.ts/auth.ts need a live runtime; resolveOtpSender's nodemailer transport builder is
-      // IO that the tests inject around — its default builder line is the only uncovered branch by design.
+      // server.ts/app.ts/auth.ts need a live runtime. SMTP transport mechanics now live in @lagda/email
+      // (tested there); resolveOtpSender's mailer resolver is injected around in tests.
       exclude: ["src/auth.ts", "src/app.ts", "src/server.ts", "src/**/*.test.ts"],
       thresholds: {
         lines: 90,

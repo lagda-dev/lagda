@@ -1,33 +1,22 @@
-import nodemailer from "nodemailer"
+import { createMailerFromEnv } from "@lagda/email"
+import type { Mailer } from "@lagda/email"
+import { createOtpEmailSender } from "./otpEmailSender"
 import { createLoggingOtpSender } from "./otpSender"
 import type { OtpSender } from "./otpSender"
-import { loadSmtpConfig } from "./smtpConfig"
-import type { SmtpConfig } from "./smtpConfig"
-import { createSmtpOtpSender } from "./smtpOtpSender"
-import type { MailTransport } from "./smtpOtpSender"
 
-// Build a real nodemailer transport from the SMTP config. Injected into resolveOtpSender so tests can
-// substitute a fake and never open a socket.
-const buildNodemailerTransport = (config: SmtpConfig): MailTransport =>
-  nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    auth: config.auth ? { user: config.auth.user, pass: config.auth.password } : undefined,
-  })
-
-// Choose the OTP delivery transport at startup:
-//   - SMTP configured  → send real email (any environment).
-//   - production + no SMTP → FAIL FAST: refuse to start, because OTP gates every sign-in AND sign-up
-//     verification, so a production instance with no email transport could never authenticate anyone.
-//   - non-production + no SMTP → the dev logging stub (prints the code locally).
+// Choose how OTP codes are delivered, at startup:
+//   - a Mailer is available (SMTP configured) → send real email (any environment).
+//   - production + no Mailer → FAIL FAST: refuse to start, because email-OTP gates every sign-in AND
+//     sign-up verification, so a production instance with no email transport could authenticate no one.
+//   - non-production + no Mailer → the dev logging stub (prints the code locally).
+// The mailer resolver is injectable so tests pick the branch without opening a socket.
 export const resolveOtpSender = (
   env: NodeJS.ProcessEnv = process.env,
-  buildTransport: (config: SmtpConfig) => MailTransport = buildNodemailerTransport,
+  resolveMailer: (env: NodeJS.ProcessEnv) => Mailer | null = createMailerFromEnv,
 ): OtpSender => {
-  const smtp = loadSmtpConfig(env)
-  if (smtp !== null) {
-    return createSmtpOtpSender(buildTransport(smtp), smtp.from)
+  const mailer = resolveMailer(env)
+  if (mailer !== null) {
+    return createOtpEmailSender(mailer)
   }
 
   if (env.NODE_ENV === "production") {
