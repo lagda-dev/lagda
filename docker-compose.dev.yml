@@ -39,7 +39,7 @@ x-dev-volumes: &dev-volumes
   - /repo/apps/server/node_modules
   - /repo/apps/auth/node_modules
   - /repo/packages/auth-contract/node_modules
-  - /repo/packages/connectors/node_modules
+  - /repo/packages/integrations/node_modules
   - /repo/packages/core/node_modules
   - /repo/packages/db/node_modules
   - /repo/packages/jobs/node_modules
@@ -110,14 +110,16 @@ services:
       - lagda-dev
 
   # Dev SMTP catcher: accepts the OTP emails the auth service sends and shows them in a web UI. Nothing
-  # leaves your machine. SMTP on :1025 (auth points here), web UI on http://localhost:8025.
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: lagda-dev-mailhog
+  # leaves your machine. SMTP on :1025 (auth points here), web UI on http://localhost:8025. Mailpit is a
+  # maintained, multi-arch (native arm64 + amd64) drop-in for MailHog, so it runs without emulation on
+  # Apple Silicon.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: lagda-dev-mailpit
     restart: unless-stopped
     ports:
-      - "${MAILHOG_SMTP_PORT:-1025}:1025"
-      - "${MAILHOG_UI_PORT:-8025}:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
     networks:
       - lagda-dev
 
@@ -135,9 +137,9 @@ services:
       # 123456 so the common case needs no inbox. This flag is fail-closed — the auth service refuses to
       # start if it is ever set under NODE_ENV=production (see isDevOtpEnabled).
       AUTH_DEV_FIXED_OTP: "true"
-      # Deliver OTP email to MailHog (the dev SMTP catcher below) so sign-up/sign-in emails are viewable
-      # at http://localhost:8025 instead of just the logs. MailHog needs no credentials. Override to a real relay.
-      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      # Deliver OTP email to Mailpit (the dev SMTP catcher below) so sign-up/sign-in emails are viewable
+      # at http://localhost:8025 instead of just the logs. Mailpit needs no credentials. Override to a real relay.
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
       SMTP_PORT: ${SMTP_PORT:-1025}
       SMTP_FROM: ${SMTP_FROM:-Lagda (dev) <no-reply@lagda.local>}
       # tsx watch relies on chokidar; polling is required for bind-mount edits to be seen in Docker.
@@ -148,7 +150,7 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      mailhog:
+      mailpit:
         condition: service_started
     ports:
       - "${AUTH_PORT:-3100}:3100"
