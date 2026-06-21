@@ -11,6 +11,10 @@ const authConfigSchema = z
     DATABASE_URL: z.string().url().optional(),
     AUTH_BASE_URL: z.string().url().default(`http://localhost:${DEFAULT_AUTH_PORT}`),
     PORT: z.coerce.number().int().positive().default(DEFAULT_AUTH_PORT),
+    // Comma-separated list of additional origins allowed to call the auth service cross-origin (the SPA's
+    // public origin in production). Better Auth 403s any origin not trusted, so this MUST be set for a
+    // self-hosted SPA served from a real domain; unset falls back to the localhost dev defaults.
+    TRUSTED_ORIGINS: z.string().optional(),
   })
   .refine((env) => Boolean(env.AUTH_DATABASE_URL ?? env.DATABASE_URL), {
     message: "Either AUTH_DATABASE_URL or DATABASE_URL must be set",
@@ -21,6 +25,18 @@ export type AuthServiceConfig = {
   databaseUrl: string
   baseUrl: string
   port: number
+  trustedOrigins?: string[]
+}
+
+// Split a comma-separated origins list into trimmed, non-empty entries; undefined when nothing is set so
+// the caller can apply its own defaults.
+const parseTrustedOrigins = (raw: string | undefined): string[] | undefined => {
+  if (raw === undefined) return undefined
+  const origins = raw
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0)
+  return origins.length > 0 ? origins : undefined
 }
 
 export const loadAuthConfig = (env: NodeJS.ProcessEnv = process.env): AuthServiceConfig => {
@@ -30,11 +46,11 @@ export const loadAuthConfig = (env: NodeJS.ProcessEnv = process.env): AuthServic
     throw new Error(`Invalid auth configuration: ${issues}`)
   }
 
-  const { AUTH_DATABASE_URL, DATABASE_URL, AUTH_BASE_URL, PORT } = parsed.data
+  const { AUTH_DATABASE_URL, DATABASE_URL, AUTH_BASE_URL, PORT, TRUSTED_ORIGINS } = parsed.data
   const databaseUrl = AUTH_DATABASE_URL ?? DATABASE_URL
   if (!databaseUrl) {
     throw new Error("Invalid auth configuration: AUTH_DATABASE_URL: Either AUTH_DATABASE_URL or DATABASE_URL must be set")
   }
 
-  return { databaseUrl, baseUrl: AUTH_BASE_URL, port: PORT }
+  return { databaseUrl, baseUrl: AUTH_BASE_URL, port: PORT, trustedOrigins: parseTrustedOrigins(TRUSTED_ORIGINS) }
 }

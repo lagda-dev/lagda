@@ -15,7 +15,7 @@ const metrics = createMetrics()
 // Resolve OTP delivery before building auth: this throws (fail fast) when running in production without
 // SMTP configured, so the instance never boots into a state where nobody can receive a sign-in code.
 const otpSender = resolveOtpSender()
-const auth = createAuth({ databaseUrl: config.databaseUrl, baseUrl: config.baseUrl, otpSender })
+const auth = createAuth({ databaseUrl: config.databaseUrl, baseUrl: config.baseUrl, trustedOrigins: config.trustedOrigins, otpSender })
 const app = createApp(auth, { metrics, logger })
 
 serve({ fetch: app.fetch, port: config.port }, (info) => {
