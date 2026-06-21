@@ -1,7 +1,7 @@
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from "@lagda/ui"
 import type { FormEvent } from "react"
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { sendOtp, signIn } from "../../auth/authClient"
 
 // Step one of the OTP-required sign-in: validate email/password against the auth service, then trigger
@@ -72,6 +72,12 @@ export const LoginPage = () => {
               {isSubmitting ? "Sending code…" : "Continue"}
             </Button>
           </form>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Link to="/signup" className="underline underline-offset-4">
+              Create one
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </main>

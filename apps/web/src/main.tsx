@@ -18,6 +18,7 @@ import { SettingsPage } from "./pages/SettingsPage"
 import { SynchronizationsPage } from "./pages/SynchronizationsPage"
 import { TemplatesPage } from "./pages/TemplatesPage"
 import { LoginPage } from "./pages/auth/LoginPage"
+import { SignUpPage } from "./pages/auth/SignUpPage"
 import { VerifyOtpPage } from "./pages/auth/VerifyOtpPage"
 
 const queryClient = new QueryClient()
@@ -27,6 +28,7 @@ const queryClient = new QueryClient()
 // is the security boundary, §6).
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  { path: "/signup", element: <SignUpPage /> },
   { path: "/verify-otp", element: <VerifyOtpPage /> },
   {
     element: <RequireAuth />,
