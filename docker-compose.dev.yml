@@ -131,9 +131,12 @@ services:
       PORT: "3100"
       DATABASE_URL: *internal-database-url
       AUTH_BASE_URL: http://localhost:3100
+      # Opt in to the local dev OTP affordance: the seeded owner (owner@lagda.local) gets the fixed code
+      # 123456 so the common case needs no inbox. This flag is fail-closed — the auth service refuses to
+      # start if it is ever set under NODE_ENV=production (see isDevOtpEnabled).
+      AUTH_DEV_FIXED_OTP: "true"
       # Deliver OTP email to MailHog (the dev SMTP catcher below) so sign-up/sign-in emails are viewable
-      # at http://localhost:8025 instead of just the logs. MailHog needs no credentials. (owner@lagda.local
-      # is still the fixed code 123456, so the common case needs no inbox at all.) Override to a real relay.
+      # at http://localhost:8025 instead of just the logs. MailHog needs no credentials. Override to a real relay.
       SMTP_HOST: ${SMTP_HOST:-mailhog}
       SMTP_PORT: ${SMTP_PORT:-1025}
       SMTP_FROM: ${SMTP_FROM:-Lagda (dev) <no-reply@lagda.local>}
