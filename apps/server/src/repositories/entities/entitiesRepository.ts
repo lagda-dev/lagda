@@ -1,4 +1,5 @@
 import { createEntity } from "./createEntity"
+import { findDefaultEntityId } from "./findDefaultEntityId"
 import { getEntity } from "./getEntity"
 import { listEntities } from "./listEntities"
 import { updateEntity } from "./updateEntity"
@@ -10,4 +11,5 @@ export const createEntitiesRepository = (db: LagdaDatabase, paginate: Paginate) 
   getEntity: getEntity(db),
   createEntity: createEntity(db),
   updateEntity: updateEntity(db),
+  findDefaultEntityId: findDefaultEntityId(db),
 })

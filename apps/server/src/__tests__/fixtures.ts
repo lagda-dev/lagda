@@ -3,7 +3,7 @@ import type { TokenClaims } from "@lagda/auth-contract"
 import type { TokenVerifier } from "../middleware/authContext"
 import type { Page } from "../infrastructure/pagination"
 import type { ApiDependencies } from "../routes/v1/dependencies"
-import type { Repository, SyncEnqueuer } from "../repositories/repository"
+import type { CancelSyncRunResult, Repository, SyncEnqueuer } from "../repositories/repository"
 import type {
   AssignmentRecord,
   AuditEventRecord,
@@ -52,6 +52,7 @@ export const createMockRepository = (): Repository => ({
   getEntity: vi.fn(async (): Promise<EntityRecord | null> => null),
   createEntity: vi.fn(async (): Promise<EntityRecord> => sampleEntity),
   updateEntity: vi.fn(async (): Promise<EntityRecord | null> => sampleEntity),
+  findDefaultEntityId: vi.fn(async (): Promise<string | null> => sampleEntity.id),
   listEmployees: vi.fn(async (): Promise<Page<EmployeeRecord>> => emptyPage()),
   getEmployee: vi.fn(async (): Promise<EmployeeRecord | null> => null),
   listTemplates: vi.fn(async (): Promise<Page<TemplateRecord>> => emptyPage()),
@@ -69,7 +70,7 @@ export const createMockRepository = (): Repository => ({
   listSyncRuns: vi.fn(async (): Promise<Page<SyncRunRecord>> => emptyPage()),
   getSyncRun: vi.fn(async (): Promise<SyncRunRecord | null> => null),
   createSyncRun: vi.fn(async (): Promise<SyncRunRecord> => sampleSyncRun),
-  cancelSyncRun: vi.fn(async (): Promise<SyncRunRecord | null> => sampleSyncRun),
+  cancelSyncRun: vi.fn(async (): Promise<CancelSyncRunResult> => ({ outcome: "cancelled", run: { ...sampleSyncRun, status: "cancelled" } })),
   listDeployments: vi.fn(async (): Promise<Page<DeploymentRecord>> => emptyPage()),
 })
 

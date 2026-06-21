@@ -8,10 +8,12 @@ import type { Outcome } from "./handlers"
 import { respondOutcome } from "./respond"
 import type { DeploymentRecord } from "../../repositories/types"
 import type { Page } from "../../infrastructure/pagination"
+import { apiErrorSchema } from "../../infrastructure/errors"
 import { errorResponses, idParamSchema, idempotencyHeaderSchema, listQuerySchema, pageResponseSchema } from "./schemas"
 import { guard } from "./dependencies"
 import type { ApiDependencies } from "./dependencies"
 import { createSynchronization } from "./createSynchronization"
+import { cancelSynchronization } from "./cancelSynchronization"
 import { syncTargetSchema } from "./syncTargetSchema"
 
 // `synchronizations` — run/read directory→signature syncs (§4). Owner and admin (RUN_SYNCS), public
@@ -135,6 +137,10 @@ export const registerSynchronizations = <S extends Schema>(app: OpenAPIHono<{ Va
     request: { params: idParamSchema, headers: idempotencyHeaderSchema },
     responses: {
       200: { description: "The cancelled synchronization", content: { "application/json": { schema: syncRunSchema } } },
+      409: {
+        description: "The synchronization is already in a terminal state and cannot be cancelled",
+        content: { "application/json": { schema: apiErrorSchema } },
+      },
       ...errorResponses,
     },
   })
@@ -144,5 +150,5 @@ export const registerSynchronizations = <S extends Schema>(app: OpenAPIHono<{ Va
     .openapi(createSyncRoute, async (ctx) => respondOutcome(ctx, await createSynchronization(ctx, deps, ctx.req.valid("json")), 202))
     .openapi(deploymentsRoute, async (ctx) => respondOutcome(ctx, await deploymentsOutcome(ctx, deps, ctx.req.valid("param").id)))
     .openapi(statusRoute, async (ctx) => respondOutcome(ctx, await itemOutcome(ctx, ctx.req.valid("param").id, deps.repository.getSyncRun)))
-    .openapi(cancelRoute, async (ctx) => respondOutcome(ctx, await itemOutcome(ctx, ctx.req.valid("param").id, deps.repository.cancelSyncRun)))
+    .openapi(cancelRoute, async (ctx) => respondOutcome(ctx, await cancelSynchronization(ctx, deps, ctx.req.valid("param").id)))
 }

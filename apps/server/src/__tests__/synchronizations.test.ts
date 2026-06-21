@@ -36,17 +36,35 @@ describe("POST /api/v1/synchronizations", () => {
     expect(enqueuer.enqueueDirectorySync).toHaveBeenCalledWith({ organizationId: "org-1", entityId: "ent-1", syncRunId: sampleSyncRun.id })
   })
 
-  it("accepts the org target variant and enqueues against the organization", async () => {
-    // Arrange
+  it("resolves the org target to the org's default entity (NOT the org id) before enqueueing", async () => {
+    // Arrange — the org's default entity resolves to ent-2; the job must carry that entity id.
+    const repository = createMockRepository()
+    repository.findDefaultEntityId = vi.fn(async () => "ent-2")
     const enqueuer = createMockEnqueuer()
-    const app = createApp(buildDeps({ enqueuer }))
+    const app = createApp(buildDeps({ repository, enqueuer }))
 
     // Act
     const response = await postSync(app, { target: { kind: "org", organizationId: "org-1" }, templateId: "tpl-1" })
 
-    // Assert
+    // Assert — entityId is the resolved default entity, never the organization id.
     expect(response.status).toBe(202)
-    expect(enqueuer.enqueueDirectorySync).toHaveBeenCalledWith({ organizationId: "org-1", entityId: "org-1", syncRunId: sampleSyncRun.id })
+    expect(repository.findDefaultEntityId).toHaveBeenCalledWith("org-1")
+    expect(enqueuer.enqueueDirectorySync).toHaveBeenCalledWith({ organizationId: "org-1", entityId: "ent-2", syncRunId: sampleSyncRun.id })
+  })
+
+  it("fails the org sync when the organization has no entity to synchronize", async () => {
+    // Arrange — no default entity resolves, so the create must fail rather than enqueue a bad job.
+    const repository = createMockRepository()
+    repository.findDefaultEntityId = vi.fn(async () => null)
+    const enqueuer = createMockEnqueuer()
+    const app = createApp(buildDeps({ repository, enqueuer }))
+
+    // Act
+    const response = await postSync(app, { target: { kind: "org", organizationId: "org-1" } })
+
+    // Assert
+    expect(response.status).toBe(500)
+    expect(enqueuer.enqueueDirectorySync).not.toHaveBeenCalled()
   })
 
   it("accepts the users target variant", async () => {
@@ -202,7 +220,7 @@ describe("POST /api/v1/synchronizations/{id}/cancel", () => {
     // Arrange
     const repository = createMockRepository()
     const cancelled: SyncRunRecord = { ...sampleSyncRun, status: "cancelled" }
-    repository.cancelSyncRun = vi.fn(async () => cancelled)
+    repository.cancelSyncRun = vi.fn(async () => ({ outcome: "cancelled" as const, run: cancelled }))
     const app = createApp(buildDeps({ repository }))
 
     // Act
@@ -216,9 +234,9 @@ describe("POST /api/v1/synchronizations/{id}/cancel", () => {
   })
 
   it("returns 404 when cancelling a run that does not exist", async () => {
-    // Arrange — the run is not found, so cancel resolves null
+    // Arrange — the run is not found
     const repository = createMockRepository()
-    repository.cancelSyncRun = vi.fn(async () => null)
+    repository.cancelSyncRun = vi.fn(async () => ({ outcome: "not_found" as const }))
     const app = createApp(buildDeps({ repository }))
 
     // Act
@@ -226,6 +244,22 @@ describe("POST /api/v1/synchronizations/{id}/cancel", () => {
 
     // Assert
     expect(response.status).toBe(404)
+  })
+
+  it("returns 409 when cancelling a run that is already terminal, without rewriting it", async () => {
+    // Arrange — the run exists but already succeeded, so it is not cancellable
+    const repository = createMockRepository()
+    const succeeded: SyncRunRecord = { ...sampleSyncRun, status: "succeeded" }
+    repository.cancelSyncRun = vi.fn(async () => ({ outcome: "not_cancellable" as const, run: succeeded }))
+    const app = createApp(buildDeps({ repository }))
+
+    // Act
+    const response = await app.request("/api/v1/synchronizations/sync-1/cancel", { method: "POST", headers })
+    const body = (await response.json()) as { error: { code: string } }
+
+    // Assert
+    expect(response.status).toBe(409)
+    expect(body.error.code).toBe("conflict")
   })
 })
 

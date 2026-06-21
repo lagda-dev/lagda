@@ -19,6 +19,11 @@ import type {
   UpdateTemplateInput,
 } from "./types"
 
+// The outcome of a cancel attempt. A plain record/null cannot distinguish "no such run" from "the run
+// exists but is already terminal", and those map to different HTTP statuses (404 vs 409), so cancel
+// returns a discriminated result the handler translates.
+export type CancelSyncRunResult = { outcome: "cancelled"; run: SyncRunRecord } | { outcome: "not_found" } | { outcome: "not_cancellable"; run: SyncRunRecord }
+
 // The data-access API the routes are written against (kept apart from `types.ts`, which holds the
 // record/input shapes): handlers receive a `Repository` rather than a live DB, so they are unit-testable
 // against a mock (§testability). The Kysely-backed implementation is assembled in `kyselyRepository.ts`.
@@ -33,6 +38,9 @@ export type Repository = {
   getEntity: (orgId: string, id: string) => Promise<EntityRecord | null>
   createEntity: (input: CreateEntityInput) => Promise<EntityRecord>
   updateEntity: (input: UpdateEntityInput) => Promise<EntityRecord | null>
+  // Resolve the org's default entity id (the canonical `slug = 'default'` entity every org is
+  // provisioned with), used to scope an org-wide synchronization. Null when the org has no entity.
+  findDefaultEntityId: (orgId: string) => Promise<string | null>
 
   listEmployees: (orgId: string, query: PaginationQuery) => Promise<Page<EmployeeRecord>>
   getEmployee: (orgId: string, id: string) => Promise<EmployeeRecord | null>
@@ -55,7 +63,7 @@ export type Repository = {
   listSyncRuns: (orgId: string, query: PaginationQuery) => Promise<Page<SyncRunRecord>>
   getSyncRun: (orgId: string, id: string) => Promise<SyncRunRecord | null>
   createSyncRun: (input: CreateSyncRunInput) => Promise<SyncRunRecord>
-  cancelSyncRun: (orgId: string, id: string) => Promise<SyncRunRecord | null>
+  cancelSyncRun: (orgId: string, id: string) => Promise<CancelSyncRunResult>
   listDeployments: (orgId: string, syncRunId: string, query: PaginationQuery) => Promise<Page<DeploymentRecord>>
 }
 
