@@ -11,7 +11,7 @@ The only thing you need is **Docker** — no Node, no pnpm.
 ```bash
 git clone https://github.com/lagda-dev/lagda
 cd lagda
-docker compose up
+docker compose up   # or: make up
 ```
 
 That boots PostgreSQL, runs the migrations, seeds the first organization + owner, and
@@ -70,10 +70,11 @@ TypeScript · Node.js · [Hono](https://hono.dev) · [Vite](https://vitejs.dev) 
 
 ## Development (contributing)
 
-Hot-reload development runs entirely in Docker — **no host Node or pnpm required**:
+Hot-reload development runs entirely in Docker — **no host Node or pnpm required**. The `Makefile`
+wraps the common commands (run `make` to list them all):
 
 ```bash
-docker compose -f docker-compose.dev.yml up        # Postgres + migrate + seed + the three watch servers
+make dev          # full stack with live reload (or: docker compose -f docker-compose.dev.yml up)
 ```
 
 This brings up Postgres, applies the schema, seeds the first org/owner, and starts all three apps
@@ -83,8 +84,8 @@ change reloads in the running container. Sign in as `owner@lagda.local` / `lagda
 email-OTP is printed to the auth service logs:
 
 ```bash
-docker compose -f docker-compose.dev.yml logs -f auth   # watch for the one-time code on sign-in
-docker compose -f docker-compose.dev.yml down -v        # stop and wipe the dev database
+make otp          # tail the auth logs to read the dev sign-in one-time code
+make dev-reset    # stop the dev stack and wipe its database
 ```
 
 ### Running the toolchain (tests, lint, types)
