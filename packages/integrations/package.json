@@ -1,11 +1,11 @@
 {
-  "name": "@lagda/connectors",
+  "name": "@lagda/integrations",
   "version": "0.1.0",
-  "description": "Lagda directory + signature-deploy connectors (Google Workspace, Microsoft stub)",
+  "description": "Lagda directory + signature-deploy integrations (Google Workspace, Microsoft stub)",
   "license": "AGPL-3.0-only",
   "type": "module",
   "exports": {
-    ".": "./src/connectors.ts"
+    ".": "./src/integrations.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

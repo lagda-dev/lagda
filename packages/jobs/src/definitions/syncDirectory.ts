@@ -14,7 +14,7 @@ export const syncDirectoryPayloadSchema = z.object({
 export type SyncDirectoryPayload = z.infer<typeof syncDirectoryPayloadSchema>
 
 // One directory employee, as returned by the injected directory reader. Kept as a small
-// local interface so this handler stays decoupled from @lagda/db and @lagda/connectors.
+// local interface so this handler stays decoupled from @lagda/db and @lagda/integrations.
 export type SyncDirectoryEmployee = {
   email: string
 }

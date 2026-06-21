@@ -19,7 +19,7 @@ export type DeploymentRecord = {
 }
 
 // Dependencies are injected so the handler is decoupled and unit-testable: the parent
-// wires the real connector deploy + the deployment recorder in apps/server.
+// wires the real integration deploy + the deployment recorder in apps/server.
 export type DeploySignatureDeps = {
   deploySignature: (employeeEmail: string, html: string) => Promise<void>
   recordDeployment: (record: DeploymentRecord) => Promise<void>

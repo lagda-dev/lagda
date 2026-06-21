@@ -338,25 +338,6 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@20.19.43)(jsdom@25.0.1)
 
-  packages/connectors:
-    dependencies:
-      '@lagda/core':
-        specifier: workspace:*
-        version: link:../core
-      googleapis:
-        specifier: ^144.0.0
-        version: 144.0.0
-    devDependencies:
-      '@vitest/coverage-v8':
-        specifier: ^1.6.0
-        version: 1.6.1(vitest@1.6.1(@types/node@20.19.43)(jsdom@25.0.1))
-      typescript:
-        specifier: ^5.6.0
-        version: 5.9.3
-      vitest:
-        specifier: ^1.6.0
-        version: 1.6.1(@types/node@20.19.43)(jsdom@25.0.1)
-
   packages/core:
     dependencies:
       zod:
@@ -419,6 +400,25 @@ importers:
       '@types/nodemailer':
         specifier: ^6.4.16
         version: 6.4.24
+      '@vitest/coverage-v8':
+        specifier: ^1.6.0
+        version: 1.6.1(vitest@1.6.1(@types/node@20.19.43)(jsdom@25.0.1))
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.1(@types/node@20.19.43)(jsdom@25.0.1)
+
+  packages/integrations:
+    dependencies:
+      '@lagda/core':
+        specifier: workspace:*
+        version: link:../core
+      googleapis:
+        specifier: ^144.0.0
+        version: 144.0.0
+    devDependencies:
       '@vitest/coverage-v8':
         specifier: ^1.6.0
         version: 1.6.1(vitest@1.6.1(@types/node@20.19.43)(jsdom@25.0.1))

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { createGoogleConnector } from "../google/googleConnector"
+import { createGoogleIntegration } from "../google/googleIntegration"
 import type { GoogleClient } from "../google/googleClient"
 import type { GoogleDirectoryUser } from "../mappers/googleUserMapper"
 
@@ -9,7 +9,7 @@ const buildMockClient = (overrides: Partial<GoogleClient> = {}): GoogleClient =>
   ...overrides,
 })
 
-describe("createGoogleConnector", () => {
+describe("createGoogleIntegration", () => {
   describe("listEmployees", () => {
     it("maps directory users returned by the client to domain employees", async () => {
       // Arrange
@@ -21,10 +21,10 @@ describe("createGoogleConnector", () => {
         },
       ]
       const client = buildMockClient({ listDirectoryUsers: vi.fn(async () => directoryUsers) })
-      const connector = createGoogleConnector(client)
+      const integration = createGoogleIntegration(client)
 
       // Act
-      const employees = await connector.listEmployees()
+      const employees = await integration.listEmployees()
 
       // Assert
       expect(client.listDirectoryUsers).toHaveBeenCalledOnce()
@@ -39,17 +39,17 @@ describe("createGoogleConnector", () => {
       ])
     })
 
-    it("wraps client errors with connector context", async () => {
+    it("wraps client errors with integration context", async () => {
       // Arrange
       const client = buildMockClient({
         listDirectoryUsers: vi.fn(async () => {
           throw new Error("quota exceeded")
         }),
       })
-      const connector = createGoogleConnector(client)
+      const integration = createGoogleIntegration(client)
 
       // Act + Assert
-      await expect(connector.listEmployees()).rejects.toThrow("Failed to list employees from Google Workspace: quota exceeded")
+      await expect(integration.listEmployees()).rejects.toThrow("Failed to list employees from Google Workspace: quota exceeded")
     })
   })
 
@@ -57,10 +57,10 @@ describe("createGoogleConnector", () => {
     it("forwards the email and html to the client", async () => {
       // Arrange
       const client = buildMockClient()
-      const connector = createGoogleConnector(client)
+      const integration = createGoogleIntegration(client)
 
       // Act
-      await connector.deploySignature("ada@example.com", "<p>Ada</p>")
+      await integration.deploySignature("ada@example.com", "<p>Ada</p>")
 
       // Assert
       expect(client.updateSendAsSignature).toHaveBeenCalledWith("ada@example.com", "<p>Ada</p>")
@@ -73,10 +73,10 @@ describe("createGoogleConnector", () => {
           throw new Error("permission denied")
         }),
       })
-      const connector = createGoogleConnector(client)
+      const integration = createGoogleIntegration(client)
 
       // Act + Assert
-      await expect(connector.deploySignature("ada@example.com", "<p>Ada</p>")).rejects.toThrow(
+      await expect(integration.deploySignature("ada@example.com", "<p>Ada</p>")).rejects.toThrow(
         "Failed to deploy signature to ada@example.com via Google Workspace: permission denied",
       )
     })
