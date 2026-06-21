@@ -52,7 +52,7 @@ export const authClient = createAuthClient({
 })
 
 // Typed re-exports so feature code never reaches into the raw client surface.
-export const { signIn, signUp, signOut, useSession, getSession, organization } = authClient
+export const { signIn, signUp, signOut, useSession, getSession, organization, useActiveOrganization } = authClient
 
 // Send a sign-in OTP to the given email (the OTP-required step after email/password).
 export const sendOtp = (email: string) => authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" })
