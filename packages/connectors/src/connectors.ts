@@ -1,4 +1,5 @@
-export type { ConnectorInterface, DirectoryEmployee } from "./types"
+export type { ConnectorInterface } from "./connector"
+export type { DirectoryEmployee } from "./types"
 export type { GoogleClient } from "./google/googleClient"
 export type { GoogleDirectoryUser } from "./mappers/googleUserMapper"
 export { createGoogleClient } from "./google/googleClient"

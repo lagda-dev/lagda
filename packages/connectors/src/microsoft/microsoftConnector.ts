@@ -1,18 +1,10 @@
-import type { ConnectorInterface } from "../types"
+import type { ConnectorInterface } from "../connector"
+import { deploySignature } from "./deploySignature"
+import { listEmployees } from "./listEmployees"
 
-// Message shared by every Microsoft connector method until the integration lands.
-const NOT_IMPLEMENTED_MESSAGE = "NotImplemented: Microsoft connector is not available yet"
-
-// TODO: deferred to a later milestone — implement Microsoft Graph directory reads and
-// Exchange/Outlook signature writes here, behind the same injected-client pattern as Google.
-export const createMicrosoftConnector = (): ConnectorInterface => {
-  const listEmployees = async (): Promise<never> => {
-    throw new Error(NOT_IMPLEMENTED_MESSAGE)
-  }
-
-  const deploySignature = async (): Promise<never> => {
-    throw new Error(NOT_IMPLEMENTED_MESSAGE)
-  }
-
-  return { listEmployees, deploySignature }
-}
+// The Microsoft connector (stub until the integration lands), assembled from its per-operation files —
+// the same injected-operation pattern as Google.
+export const createMicrosoftConnector = (): ConnectorInterface => ({
+  listEmployees: listEmployees(),
+  deploySignature: deploySignature(),
+})

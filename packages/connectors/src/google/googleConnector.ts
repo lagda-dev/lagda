@@ -1,27 +1,11 @@
-import type { ConnectorInterface, DirectoryEmployee } from "../types"
+import type { ConnectorInterface } from "../connector"
+import { deploySignature } from "./deploySignature"
 import type { GoogleClient } from "./googleClient"
-import { toDirectoryEmployee } from "../mappers/googleUserMapper"
-import { getErrorMessage } from "@lagda/core"
+import { listEmployees } from "./listEmployees"
 
-// The Google Workspace connector. The client is injected so the connector is fully mockable:
-// the implementation holds the orchestration; the client holds the I/O.
-export const createGoogleConnector = (client: GoogleClient): ConnectorInterface => {
-  const listEmployees = async (): Promise<DirectoryEmployee[]> => {
-    try {
-      const directoryUsers = await client.listDirectoryUsers()
-      return directoryUsers.map(toDirectoryEmployee)
-    } catch (error) {
-      throw new Error(`Failed to list employees from Google Workspace: ${getErrorMessage(error)}`)
-    }
-  }
-
-  const deploySignature = async (email: string, html: string): Promise<void> => {
-    try {
-      await client.updateSendAsSignature(email, html)
-    } catch (error) {
-      throw new Error(`Failed to deploy signature to ${email} via Google Workspace: ${getErrorMessage(error)}`)
-    }
-  }
-
-  return { listEmployees, deploySignature }
-}
+// The Google Workspace connector. The client is injected so it is fully mockable: each operation lives
+// in its own file (the I/O is the client's); this assembly binds them to the client.
+export const createGoogleConnector = (client: GoogleClient): ConnectorInterface => ({
+  listEmployees: listEmployees(client),
+  deploySignature: deploySignature(client),
+})

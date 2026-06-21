@@ -7,10 +7,3 @@ export type DirectoryEmployee = {
   department: string | null
   jobTitle: string | null
 }
-
-// The capability surface every connector exposes, regardless of the underlying provider.
-// `listEmployees` reads the directory; `deploySignature` writes a recipient's signature HTML.
-export type ConnectorInterface = {
-  listEmployees: () => Promise<DirectoryEmployee[]>
-  deploySignature: (email: string, html: string) => Promise<void>
-}
