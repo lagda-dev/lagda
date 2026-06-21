@@ -25,7 +25,7 @@ describe("SignUpPage", () => {
     // Assert
     expect(screen.getByLabelText("Your name")).toBeInTheDocument()
     expect(screen.getByLabelText("Company name")).toBeInTheDocument()
-    expect(screen.getByLabelText("Email")).toBeInTheDocument()
+    expect(screen.getByLabelText("Work email")).toBeInTheDocument()
     expect(screen.getByLabelText("Password")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Create account" })).toBeInTheDocument()
   })
