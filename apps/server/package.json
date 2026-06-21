@@ -26,9 +26,9 @@
     "@lagda/jobs": "workspace:*",
     "@lagda/logger": "workspace:*",
     "@lagda/observability": "workspace:*",
-    "@opentelemetry/auto-instrumentations-node": "^0.52.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.77.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.55.0",
-    "@opentelemetry/sdk-node": "^0.55.0",
+    "@opentelemetry/sdk-node": "^0.217.0",
     "@scalar/hono-api-reference": "^0.5.172",
     "hono": "^4.6.5",
     "hono-rate-limiter": "^0.4.2",
@@ -44,6 +44,6 @@
     "tsup": "^8.3.0",
     "tsx": "^4.19.1",
     "typescript": "^5.6.0",
-    "vitest": "^1.6.0"
+    "vitest": "^3.2.6"
   }
 }

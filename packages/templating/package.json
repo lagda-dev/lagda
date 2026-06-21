@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "@lagda/core": "workspace:*",
-    "mjml": "^4.15.3"
+    "mjml": "^5.0.0"
   },
   "devDependencies": {
     "@types/mjml": "^4.7.4",
     "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.6.0",
-    "vitest": "^1.6.0"
+    "vitest": "^3.2.6"
   }
 }
