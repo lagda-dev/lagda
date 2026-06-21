@@ -34,6 +34,14 @@ describe("loadSmtpConfig", () => {
     expect(() => loadSmtpConfig({ ...baseEnv, SMTP_USER: "apikey" } as NodeJS.ProcessEnv)).toThrow("SMTP_USER and SMTP_PASSWORD must be set together")
   })
 
+  it("treats EMPTY-string credentials as no auth (docker-compose passes unset vars as empty strings)", () => {
+    // The zero-config compose path sets SMTP_USER/SMTP_PASSWORD to "" for a no-auth relay — that must
+    // mean "no credentials", not a zero-length string that fails validation and crashes auth at boot.
+    const config = loadSmtpConfig({ ...baseEnv, SMTP_USER: "", SMTP_PASSWORD: "" } as NodeJS.ProcessEnv)
+    expect(config?.auth).toBeUndefined()
+    expect(config?.host).toBe("smtp.example.com")
+  })
+
   it("throws when SMTP_HOST is set but SMTP_FROM is missing", () => {
     expect(() => loadSmtpConfig({ SMTP_HOST: "smtp.example.com" } as NodeJS.ProcessEnv)).toThrow("Invalid SMTP configuration")
   })

@@ -6,6 +6,12 @@ const DEFAULT_SMTP_PORT = 587
 // when it is absent we return null so the caller decides the fallback (dev logging, fail-fast, …). When
 // SMTP_HOST is set, the rest is validated and a clear error is thrown for a half-configured transport —
 // SMTP_FROM is then required (you cannot send mail without a From address).
+// An optional string env var that may arrive as an EMPTY string (docker-compose passes `${VAR:-}` as
+// "", not unset) — coerce "" to undefined so an absent value is genuinely absent rather than a
+// zero-length string that fails `.min(1)`. Without this, a no-auth relay (empty SMTP_USER/PASSWORD)
+// would crash the auth service at boot.
+const optionalEnvString = z.preprocess((value) => (typeof value === "string" && value.length === 0 ? undefined : value), z.string().min(1).optional())
+
 const smtpConfigSchema = z.object({
   SMTP_HOST: z.string().min(1),
   SMTP_PORT: z.coerce.number().int().positive().default(DEFAULT_SMTP_PORT),
@@ -14,8 +20,8 @@ const smtpConfigSchema = z.object({
     .string()
     .optional()
     .transform((value) => value === "true"),
-  SMTP_USER: z.string().min(1).optional(),
-  SMTP_PASSWORD: z.string().min(1).optional(),
+  SMTP_USER: optionalEnvString,
+  SMTP_PASSWORD: optionalEnvString,
   SMTP_FROM: z.string().min(1),
 })
 
