@@ -29,3 +29,10 @@ export const fetchJson = async <Body>(operation: string, response: RpcResponse<B
   if (!response.ok) throw new ApiError(operation, response.status)
   return response.json()
 }
+
+// The no-body counterpart for `204 No Content` responses (deletes): same fail-loud `ApiError` boundary,
+// but never reads `.json()` (a 204 has no body to parse). Every write path goes through one of these two
+// helpers so error handling stays consistent and typed — never a hand-rolled `throw new Error`.
+export const fetchVoid = async (operation: string, response: Pick<RpcResponse<unknown>, "ok" | "status">): Promise<void> => {
+  if (!response.ok) throw new ApiError(operation, response.status)
+}

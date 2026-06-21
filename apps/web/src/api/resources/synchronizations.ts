@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query"
 import type { InferRequestType, InferResponseType } from "hono/client"
 import { api } from "../client"
-import { fetchJson } from "../fetchJson"
+import { ApiError, fetchJson } from "../fetchJson"
 import { noIdempotencyHeader } from "./mutationHeaders"
 import { queryKeys } from "../queryKeys"
 import type { CursorListParams } from "./listParams"
-import { toListQuery } from "./listParams"
+import { toListFilters, toListQuery } from "./listParams"
 
 // `synchronizations` — run and read directory→signature syncs (RUN_SYNCS). This is the one writable
 // resource the server threads fully into `AppType`: list, get-by-id, the `/{id}/deployments` sub-list,
@@ -33,22 +33,25 @@ const fetchDeploymentsList = async (synchronizationId: string, params: CursorLis
     await api.api.v1.synchronizations[":id"].deployments.$get({ param: { id: synchronizationId }, query: toListQuery(params) }),
   )
 
-// Enqueue a new synchronization run. The server answers 202 with the accepted run id + status.
+// Enqueue a new synchronization run. The server answers 202 with the accepted run id + status. These two
+// write paths can't use `fetchJson`'s generic — the route declares non-200 success (202) and/or extra
+// error statuses (409 on cancel), so the hc `.json()` union doesn't collapse to the success body — but
+// they still fail loud through the SAME shared `ApiError` (never a hand-rolled `throw new Error`).
 const createSynchronization = async (input: CreateSynchronizationInput): Promise<SynchronizationAccepted> => {
   const response = await api.api.v1.synchronizations.$post({ json: input, ...noIdempotencyHeader })
-  if (!response.ok) throw new Error(`Request "create synchronization" failed with status ${response.status}`)
-  return response.json()
+  if (!response.ok) throw new ApiError("create synchronization", response.status)
+  return (await response.json()) as SynchronizationAccepted
 }
 
-// Cancel a running synchronization; the server returns the cancelled run.
-const cancelSynchronization = async (synchronizationId: string): Promise<Synchronization> =>
-  fetchJson(
-    `cancel synchronization ${synchronizationId}`,
-    await api.api.v1.synchronizations[":id"].cancel.$post({ param: { id: synchronizationId }, ...noIdempotencyHeader }),
-  )
+// Cancel a running synchronization; the server returns the cancelled run (or 409 if already terminal).
+const cancelSynchronization = async (synchronizationId: string): Promise<Synchronization> => {
+  const response = await api.api.v1.synchronizations[":id"].cancel.$post({ param: { id: synchronizationId }, ...noIdempotencyHeader })
+  if (!response.ok) throw new ApiError(`cancel synchronization ${synchronizationId}`, response.status)
+  return (await response.json()) as Synchronization
+}
 
 export const useSynchronizationsList = (params: CursorListParams = {}) =>
-  useQuery({ queryKey: queryKeys.synchronizations.list({ cursor: params.cursor }), queryFn: () => fetchSynchronizationsList(params) })
+  useQuery({ queryKey: queryKeys.synchronizations.list(toListFilters(params)), queryFn: () => fetchSynchronizationsList(params) })
 
 export const useSynchronization = (synchronizationId: string) =>
   useQuery({
@@ -59,7 +62,7 @@ export const useSynchronization = (synchronizationId: string) =>
 
 export const useSynchronizationDeployments = (synchronizationId: string, params: CursorListParams = {}) =>
   useQuery({
-    queryKey: queryKeys.synchronizations.deployments(synchronizationId, { cursor: params.cursor }),
+    queryKey: queryKeys.synchronizations.deployments(synchronizationId, toListFilters(params)),
     queryFn: () => fetchDeploymentsList(synchronizationId, params),
     enabled: synchronizationId.length > 0,
   })

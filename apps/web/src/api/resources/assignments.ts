@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { InferRequestType, InferResponseType } from "hono/client"
 import { api } from "../client"
-import { fetchJson } from "../fetchJson"
+import { fetchJson, fetchVoid } from "../fetchJson"
 import { noIdempotencyHeader } from "./mutationHeaders"
 import { queryKeys } from "../queryKeys"
 import type { CursorListParams } from "./listParams"
-import { toListQuery } from "./listParams"
+import { toListFilters, toListQuery } from "./listParams"
 
 // `assignments` — entity-scoped binding of a template to a target audience (MANAGE_TEMPLATES). Read here
 // as list + get-by-id; create + delete are the Wave-4 write routes now threaded into `AppType`. The create
@@ -26,7 +26,7 @@ const fetchAssignment = async (assignmentId: string): Promise<Assignment> =>
   fetchJson(`get assignment ${assignmentId}`, await api.api.v1.assignments[":id"].$get({ param: { id: assignmentId } }))
 
 export const useAssignmentsList = (params: CursorListParams = {}) =>
-  useQuery({ queryKey: queryKeys.assignments.list({ cursor: params.cursor }), queryFn: () => fetchAssignmentsList(params) })
+  useQuery({ queryKey: queryKeys.assignments.list(toListFilters(params)), queryFn: () => fetchAssignmentsList(params) })
 
 export const useAssignment = (assignmentId: string) =>
   useQuery({ queryKey: queryKeys.assignments.detail(assignmentId), queryFn: () => fetchAssignment(assignmentId), enabled: assignmentId.length > 0 })
@@ -36,10 +36,8 @@ const createAssignment = async (input: CreateAssignmentInput): Promise<Assignmen
   fetchJson("create assignment", await api.api.v1.assignments.$post({ json: input, ...noIdempotencyHeader }))
 
 // Delete an assignment by id; the server answers 204 with no body, so we return void.
-const deleteAssignment = async (assignmentId: string): Promise<void> => {
-  const response = await api.api.v1.assignments[":id"].$delete({ param: { id: assignmentId } })
-  if (!response.ok) throw new Error(`Request "delete assignment ${assignmentId}" failed with status ${response.status}`)
-}
+const deleteAssignment = async (assignmentId: string): Promise<void> =>
+  fetchVoid(`delete assignment ${assignmentId}`, await api.api.v1.assignments[":id"].$delete({ param: { id: assignmentId } }))
 
 export const useCreateAssignment = () => {
   const queryClient = useQueryClient()

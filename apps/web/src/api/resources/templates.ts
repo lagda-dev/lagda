@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { InferRequestType, InferResponseType } from "hono/client"
 import { api } from "../client"
-import { fetchJson } from "../fetchJson"
+import { fetchJson, fetchVoid } from "../fetchJson"
 import { noIdempotencyHeader } from "./mutationHeaders"
 import { queryKeys } from "../queryKeys"
 import type { CursorListParams } from "./listParams"
-import { toListQuery } from "./listParams"
+import { toListFilters, toListQuery } from "./listParams"
 
 // `templates` — entity-scoped MJML signature templates (MANAGE_TEMPLATES). List + get-by-id read the
 // directory; create/update/delete are the Wave-4 write routes now threaded into `AppType`. Each mutation
@@ -28,7 +28,7 @@ const fetchTemplate = async (templateId: string): Promise<Template> =>
   fetchJson(`get template ${templateId}`, await api.api.v1.templates[":id"].$get({ param: { id: templateId } }))
 
 export const useTemplatesList = (params: CursorListParams = {}) =>
-  useQuery({ queryKey: queryKeys.templates.list({ cursor: params.cursor }), queryFn: () => fetchTemplatesList(params) })
+  useQuery({ queryKey: queryKeys.templates.list(toListFilters(params)), queryFn: () => fetchTemplatesList(params) })
 
 export const useTemplate = (templateId: string) =>
   useQuery({ queryKey: queryKeys.templates.detail(templateId), queryFn: () => fetchTemplate(templateId), enabled: templateId.length > 0 })
@@ -42,10 +42,8 @@ const updateTemplate = async ({ id, body }: UpdateTemplateInput): Promise<Templa
   fetchJson(`update template ${id}`, await api.api.v1.templates[":id"].$patch({ param: { id }, json: body }))
 
 // Delete a template by id; the server answers 204 with no body, so we return void.
-const deleteTemplate = async (templateId: string): Promise<void> => {
-  const response = await api.api.v1.templates[":id"].$delete({ param: { id: templateId } })
-  if (!response.ok) throw new Error(`Request "delete template ${templateId}" failed with status ${response.status}`)
-}
+const deleteTemplate = async (templateId: string): Promise<void> =>
+  fetchVoid(`delete template ${templateId}`, await api.api.v1.templates[":id"].$delete({ param: { id: templateId } }))
 
 export const useCreateTemplate = () => {
   const queryClient = useQueryClient()

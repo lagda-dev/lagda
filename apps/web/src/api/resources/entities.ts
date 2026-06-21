@@ -5,7 +5,7 @@ import { fetchJson } from "../fetchJson"
 import { noIdempotencyHeader } from "./mutationHeaders"
 import { queryKeys } from "../queryKeys"
 import type { CursorListParams } from "./listParams"
-import { toListQuery } from "./listParams"
+import { toListFilters, toListQuery } from "./listParams"
 
 // `entities` — brands/business units under an org (§5; MANAGE_ENTITIES). Read here as list + detail, the
 // list feeding the employee directory's entity filter; create + update are the Wave-4 write routes now
@@ -28,7 +28,7 @@ const fetchEntity = async (entityId: string): Promise<Entity> =>
   fetchJson(`get entity ${entityId}`, await api.api.v1.entities[":id"].$get({ param: { id: entityId } }))
 
 export const useEntitiesList = (params: CursorListParams = {}) =>
-  useQuery({ queryKey: queryKeys.entities.list({ cursor: params.cursor }), queryFn: () => fetchEntitiesList(params) })
+  useQuery({ queryKey: queryKeys.entities.list(toListFilters(params)), queryFn: () => fetchEntitiesList(params) })
 
 export const useEntity = (entityId: string) =>
   useQuery({ queryKey: queryKeys.entities.detail(entityId), queryFn: () => fetchEntity(entityId), enabled: entityId.length > 0 })

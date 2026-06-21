@@ -33,8 +33,9 @@ const fetchEmployeesList = async (filters: EmployeeListFilters): Promise<Employe
 const fetchEmployee = async (employeeId: string): Promise<Employee> =>
   fetchJson(`get employee ${employeeId}`, await api.api.v1.employees[":id"].$get({ param: { id: employeeId } }))
 
-// The list key folds the active filters in so a filtered view caches independently of the unfiltered one.
-const employeesListKey = ({ cursor, entityId, department }: EmployeeListFilters) => queryKeys.employees.list({ cursor, entityId, department })
+// The list key folds the active filters AND pagination in so a filtered or differently-sized view caches
+// independently of the unfiltered one.
+const employeesListKey = ({ cursor, limit, entityId, department }: EmployeeListFilters) => queryKeys.employees.list({ cursor, limit, entityId, department })
 
 export const useEmployeesList = (filters: EmployeeListFilters = {}) =>
   useQuery({ queryKey: employeesListKey(filters), queryFn: () => fetchEmployeesList(filters) })

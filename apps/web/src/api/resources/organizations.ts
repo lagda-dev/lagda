@@ -4,7 +4,7 @@ import { api } from "../client"
 import { fetchJson } from "../fetchJson"
 import { queryKeys } from "../queryKeys"
 import type { CursorListParams } from "./listParams"
-import { toListQuery } from "./listParams"
+import { toListFilters, toListQuery } from "./listParams"
 
 // `organizations` — owner-only management surface (MANAGE_ORG); the caller only ever sees or mutates its
 // own tenant, enforced server-side. List + get-by-id read it; PATCH updates its name (settings land here
@@ -26,7 +26,7 @@ const fetchOrganization = async (organizationId: string): Promise<Organization> 
   fetchJson(`get organization ${organizationId}`, await api.api.v1.organizations[":id"].$get({ param: { id: organizationId } }))
 
 export const useOrganizationsList = (params: CursorListParams = {}) =>
-  useQuery({ queryKey: queryKeys.organizations.list({ cursor: params.cursor }), queryFn: () => fetchOrganizationsList(params) })
+  useQuery({ queryKey: queryKeys.organizations.list(toListFilters(params)), queryFn: () => fetchOrganizationsList(params) })
 
 export const useOrganization = (organizationId: string) =>
   useQuery({ queryKey: queryKeys.organizations.detail(organizationId), queryFn: () => fetchOrganization(organizationId), enabled: organizationId.length > 0 })
