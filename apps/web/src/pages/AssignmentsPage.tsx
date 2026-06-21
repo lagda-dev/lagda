@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@lagda/ui"
+import { getErrorMessage } from "../lib/getErrorMessage"
 import type { DataTableColumn } from "@lagda/ui"
 import type { FormEvent } from "react"
 import { useState } from "react"
@@ -30,8 +31,6 @@ import type { AssignmentTarget } from "../components/AssignmentTargetSelector"
 // The assignments screen (MANAGE_TEMPLATES): a table of template→audience bindings, with create (a
 // discriminated target selector + template picker) and delete. The page holds only view state; writes go
 // through typed mutation hooks that invalidate the assignments query. Role gating is UX only — the server enforces.
-
-const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : "Something went wrong. Please try again.")
 
 // Read the discriminant from an assignment's open `target` record for the list column, defaulting safely
 // when the shape is unexpected (the server owns validation; this is display only).

@@ -1,4 +1,5 @@
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Input, Label, PageHeader } from "@lagda/ui"
+import { getErrorMessage } from "../lib/getErrorMessage"
 import type { FormEvent } from "react"
 import { useEffect, useState } from "react"
 import { useOrganizationsList, useUpdateOrganization } from "../api/resources/organizations"
@@ -7,8 +8,6 @@ import { useOrganizationsList, useUpdateOrganization } from "../api/resources/or
 // server enforces the same matrix). It loads the caller's own organization (the list only ever returns
 // that one tenant) and lets the owner rename it via `useUpdateOrganization`. More settings land here as
 // the server exposes them.
-
-const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : "Something went wrong. Please try again.")
 
 export const SettingsPage = () => {
   const organizationsQuery = useOrganizationsList()

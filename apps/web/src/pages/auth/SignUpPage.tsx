@@ -1,4 +1,5 @@
 import { Button, Input, Label } from "@lagda/ui"
+import { getErrorMessage } from "../../lib/getErrorMessage"
 import type { FormEvent } from "react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
@@ -10,8 +11,6 @@ import { AuthLayout } from "../../components/AuthLayout"
 // (1) collect name/email/password/company and create the account (email-verification OTP is sent), then
 // (2) verify the code, sign in, create the organization (the server provisions its default entity), make
 // it active, and reload into the app as its owner. Errors are surfaced at every step, never swallowed.
-
-const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : "Unexpected error. Please try again.")
 
 // A short random suffix so two companies with the same name get distinct, instance-unique org slugs.
 const randomSlugSuffix = (): string => Math.random().toString(36).slice(2, 8)

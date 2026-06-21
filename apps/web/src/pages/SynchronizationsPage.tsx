@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@lagda/ui"
+import { getErrorMessage } from "../lib/getErrorMessage"
 import type { BadgeProps, DataTableColumn } from "@lagda/ui"
 import type { FormEvent } from "react"
 import { useState } from "react"
@@ -32,8 +33,6 @@ import type { AssignmentTarget } from "../components/AssignmentTargetSelector"
 // a "Run synchronization" dialog (the §15 discriminated target selector + an optional template), and a
 // per-row cancel for in-flight runs. The page holds only view state; the run/cancel go through typed
 // mutation hooks that invalidate the synchronizations query. Role gating is UX only — the server enforces.
-
-const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : "Something went wrong. Please try again.")
 
 // A single sync run as returned by the list endpoint (id, status, templateId, counts, createdAt).
 type SynchronizationRow = SynchronizationsResponse["data"][number]

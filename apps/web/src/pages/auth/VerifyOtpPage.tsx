@@ -1,4 +1,5 @@
 import { Button, Input, Label } from "@lagda/ui"
+import { getErrorMessage } from "../../lib/getErrorMessage"
 import type { FormEvent } from "react"
 import { useState } from "react"
 import { Navigate, useLocation, useNavigate } from "react-router-dom"
@@ -7,8 +8,6 @@ import { AuthLayout } from "../../components/AuthLayout"
 
 // Step two of the OTP-required sign-in: exchange the emailed code for a session, then proactively mint
 // the application bearer JWT so the first authenticated app-server call already has a token in hand.
-
-const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : "Unexpected error. Please try again.")
 
 type VerifyOtpLocationState = {
   email?: string

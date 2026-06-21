@@ -1,4 +1,5 @@
 import { Button, Input, Label } from "@lagda/ui"
+import { getErrorMessage } from "../../lib/getErrorMessage"
 import type { FormEvent } from "react"
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
@@ -7,8 +8,6 @@ import { AuthLayout } from "../../components/AuthLayout"
 
 // Step one of the OTP-required sign-in: validate email/password against the auth service, then trigger
 // the email-OTP step and hand off to /verify-otp. Errors are surfaced, never swallowed (§3 error rule).
-
-const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : "Unexpected error. Please try again.")
 
 export const LoginPage = () => {
   const navigate = useNavigate()

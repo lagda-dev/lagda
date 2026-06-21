@@ -18,6 +18,7 @@ import {
   SelectValue,
   Textarea,
 } from "@lagda/ui"
+import { getErrorMessage } from "../lib/getErrorMessage"
 import type { DataTableColumn } from "@lagda/ui"
 import type { FormEvent } from "react"
 import { useState } from "react"
@@ -28,8 +29,6 @@ import type { Template } from "../api/resources/templates"
 // The templates screen (MANAGE_TEMPLATES): a table of entity-scoped MJML templates with create/edit in a
 // Dialog and a delete confirm. The page holds only view state; every write goes through a typed mutation
 // hook that invalidates the templates query on success. Role gating is UX only — the server enforces.
-
-const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : "Something went wrong. Please try again.")
 
 // The dialog's editable form state. `editingId` is null when creating, the template id when editing.
 type TemplateDraft = {

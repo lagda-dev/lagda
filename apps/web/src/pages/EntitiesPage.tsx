@@ -12,6 +12,7 @@ import {
   Label,
   PageHeader,
 } from "@lagda/ui"
+import { getErrorMessage } from "../lib/getErrorMessage"
 import type { DataTableColumn } from "@lagda/ui"
 import type { FormEvent } from "react"
 import { useState } from "react"
@@ -21,8 +22,6 @@ import type { Entity } from "../api/resources/entities"
 // The entities screen (MANAGE_ENTITIES): a table of the org's brands/business units with create and edit
 // in a Dialog (name + slug). The page holds only view state; writes go through typed mutation hooks that
 // invalidate the entities query on success. Role gating is UX only — the server enforces.
-
-const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : "Something went wrong. Please try again.")
 
 type EntityDraft = {
   editingId: string | null
