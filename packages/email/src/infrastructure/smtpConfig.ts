@@ -39,11 +39,15 @@ export const loadSmtpConfig = (env: NodeJS.ProcessEnv = process.env): SmtpConfig
   }
 
   const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASSWORD, SMTP_FROM } = parsed.data
-  // Credentials are optional (open relays / IP-allowlisted senders need none); require BOTH or NEITHER.
-  if ((SMTP_USER === undefined) !== (SMTP_PASSWORD === undefined)) {
+
+  // Credentials are optional (open relays / IP-allowlisted senders need none), but they only make sense
+  // as a pair: require BOTH or NEITHER, never half a credential.
+  const hasUser = SMTP_USER !== undefined
+  const hasPassword = SMTP_PASSWORD !== undefined
+  if (hasUser !== hasPassword) {
     throw new Error("Invalid SMTP configuration: SMTP_USER and SMTP_PASSWORD must be set together")
   }
 
-  const auth = SMTP_USER !== undefined && SMTP_PASSWORD !== undefined ? { user: SMTP_USER, password: SMTP_PASSWORD } : undefined
+  const auth = hasUser && hasPassword ? { user: SMTP_USER, password: SMTP_PASSWORD } : undefined
   return { host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE, from: SMTP_FROM, auth }
 }
