@@ -2,10 +2,10 @@ import { z } from "zod"
 
 const DEFAULT_SMTP_PORT = 587
 
-// SMTP configuration for transactional email (OTP delivery). Presence of SMTP_HOST is what marks email
-// "configured"; when it is absent we return null so the caller can decide the fallback (dev logging, or
-// fail-fast in production). When SMTP_HOST is set, the rest is validated and a clear error is thrown for
-// a half-configured transport — SMTP_FROM is then required (you cannot send mail without a From address).
+// SMTP configuration, validated at the boundary. Presence of SMTP_HOST is what marks email "configured";
+// when it is absent we return null so the caller decides the fallback (dev logging, fail-fast, …). When
+// SMTP_HOST is set, the rest is validated and a clear error is thrown for a half-configured transport —
+// SMTP_FROM is then required (you cannot send mail without a From address).
 const smtpConfigSchema = z.object({
   SMTP_HOST: z.string().min(1),
   SMTP_PORT: z.coerce.number().int().positive().default(DEFAULT_SMTP_PORT),

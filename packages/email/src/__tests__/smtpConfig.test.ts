@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { loadSmtpConfig } from "../smtpConfig"
+import { loadSmtpConfig } from "../infrastructure/smtpConfig"
 
 const baseEnv = { SMTP_HOST: "smtp.example.com", SMTP_FROM: "Lagda <no-reply@example.com>" }
 
@@ -10,8 +10,13 @@ describe("loadSmtpConfig", () => {
   })
 
   it("parses a minimal config, defaulting port 587 and secure false, with no auth", () => {
-    const config = loadSmtpConfig(baseEnv as NodeJS.ProcessEnv)
-    expect(config).toEqual({ host: "smtp.example.com", port: 587, secure: false, from: "Lagda <no-reply@example.com>", auth: undefined })
+    expect(loadSmtpConfig(baseEnv as NodeJS.ProcessEnv)).toEqual({
+      host: "smtp.example.com",
+      port: 587,
+      secure: false,
+      from: "Lagda <no-reply@example.com>",
+      auth: undefined,
+    })
   })
 
   it("coerces the port and treats SMTP_SECURE='true' as secure", () => {
