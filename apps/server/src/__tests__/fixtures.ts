@@ -4,6 +4,7 @@ import type { TokenVerifier } from "../middleware/authContext"
 import type { Page } from "../infrastructure/pagination"
 import type { ApiDependencies } from "../routes/v1/dependencies"
 import type { CancelSyncRunResult, Repository, SyncEnqueuer } from "../repositories/repository"
+import type { ApplicationTokenRecord, ApplicationTokenStore } from "../applicationTokens/applicationTokens"
 import type {
   AssignmentRecord,
   AuditEventRecord,
@@ -93,10 +94,30 @@ export const verifierFor = (role: TokenClaims["role"]): TokenVerifier => vi.fn(a
 // A verifier that rejects — i.e. an invalid/expired token.
 export const rejectingVerifier = (): TokenVerifier => vi.fn(async () => Promise.reject(new Error("bad signature")))
 
+// An in-memory ApplicationTokenStore so route tests exercise the real mint→list→revoke flow without a
+// database. Org-scoped, like the Kysely implementation.
+export const createMockApplicationTokenStore = (): ApplicationTokenStore => {
+  const records: ApplicationTokenRecord[] = []
+  return {
+    insert: async (record) => {
+      records.push(record)
+    },
+    listByOrganization: async (organizationId) => records.filter((record) => record.organizationId === organizationId),
+    markRevoked: async (id, organizationId, revokedAt) => {
+      const found = records.find((record) => record.id === id && record.organizationId === organizationId)
+      if (found === undefined) return null
+      const revoked = { ...found, revokedAt }
+      records.splice(records.indexOf(found), 1, revoked)
+      return revoked
+    },
+  }
+}
+
 // Assemble the API dependencies a test app needs, with overridable parts.
 export const buildDeps = (overrides: Partial<ApiDependencies> = {}): ApiDependencies => ({
   repository: overrides.repository ?? createMockRepository(),
   enqueuer: overrides.enqueuer ?? createMockEnqueuer(),
+  applicationTokenStore: overrides.applicationTokenStore ?? createMockApplicationTokenStore(),
   verifyToken: overrides.verifyToken ?? verifierFor("owner"),
   logger: overrides.logger,
   recordSyncRun: overrides.recordSyncRun,

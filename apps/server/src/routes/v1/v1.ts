@@ -11,6 +11,7 @@ import { registerSynchronizations } from "./synchronizations"
 import { registerDepartments } from "./departments"
 import { registerRoles } from "./roles"
 import { registerAuditEvents } from "./auditEvents"
+import { registerApplicationTokens } from "./applicationTokens"
 
 // Mount every v1 resource onto the app in one place. Hono RPC only carries route types through the
 // *return value* of each `.openapi(...)` chain, so we must thread each `register*` result into the
@@ -27,8 +28,8 @@ export const registerV1Routes = <S extends Schema>(app: OpenAPIHono<{ Variables:
   const withSynchronizations = registerSynchronizations(withAssignments, deps)
   const withDepartments = registerDepartments(withSynchronizations, deps)
   const withRoles = registerRoles(withDepartments, deps)
-  // TODO(wave-4+): register write routes for notification-channels, application-tokens,
-  // directory-connections, and users/members once those resources land (out of scope here; Slack
-  // notifications are deferred).
-  return registerAuditEvents(withRoles, deps)
+  const withApplicationTokens = registerApplicationTokens(withRoles, deps)
+  // TODO(wave-4+): register write routes for notification-channels, directory-connections, and
+  // users/members once those resources land (out of scope here; Slack notifications are deferred).
+  return registerAuditEvents(withApplicationTokens, deps)
 }
