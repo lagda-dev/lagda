@@ -4,16 +4,13 @@ import type { FormEvent } from "react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { createOrganization, sendSignupOtp, setActiveOrganization, signInWithPassword, signUpWithEmail, verifyEmailOtp } from "../../auth/authClient"
-import { toOrgSlug } from "../../auth/orgSlug"
+import { randomSlugSuffix, toOrgSlug } from "../../auth/orgSlug"
 import { AuthLayout } from "../../components/AuthLayout"
 
 // Self-service sign-up: create an account that OWNS a brand-new organization. Two steps in one screen —
 // (1) collect name/email/password/company and create the account (email-verification OTP is sent), then
 // (2) verify the code, sign in, create the organization (the server provisions its default entity), make
 // it active, and reload into the app as its owner. Errors are surfaced at every step, never swallowed.
-
-// A short random suffix so two companies with the same name get distinct, instance-unique org slugs.
-const randomSlugSuffix = (): string => Math.random().toString(36).slice(2, 8)
 
 type SignUpStep = "details" | "verify"
 

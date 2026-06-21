@@ -20,3 +20,17 @@ export const toOrgSlug = (name: string, suffix: string): string => {
   const safeBase = base.length > 0 ? base : "org"
   return `${safeBase}-${suffix}`
 }
+
+const SLUG_SUFFIX_BYTES = 6
+const SLUG_SUFFIX_LENGTH = 8
+
+// A CRYPTOGRAPHICALLY random, URL-safe slug suffix. Never `Math.random()` — that is predictable/low
+// entropy, which (with open sign-up) makes org slugs guessable and prone to collision. The server's
+// unique constraint is the real uniqueness guarantee; this just makes a collision astronomically rare.
+export const randomSlugSuffix = (): string => {
+  const bytes = new Uint8Array(SLUG_SUFFIX_BYTES)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (byte) => byte.toString(36).padStart(2, "0"))
+    .join("")
+    .slice(0, SLUG_SUFFIX_LENGTH)
+}
