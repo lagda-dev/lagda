@@ -23,6 +23,11 @@ seeded owner:
 
 (Dev-only defaults — change them via the `SEED_OWNER_*` env vars; see [`docker/README.md`](./docker/README.md).)
 
+> **Email is required in production.** Sign-in and sign-up use an email one-time code, so a prod deploy
+> needs SMTP configured (`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, and `SMTP_USER`/`SMTP_PASSWORD` if your
+> relay needs auth) — the auth service refuses to start without it. See [`.env.example`](./.env.example).
+> Local dev needs none: the code is printed to the auth logs, and `owner@lagda.local` is always `123456`.
+
 ### What's running
 
 | Service         | URL                   | Notes                                                     |

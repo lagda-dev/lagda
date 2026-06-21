@@ -75,6 +75,16 @@ services:
       # AUTH_BASE_URL is the JWT issuer and the origin the server resolves its JWKS from (see below).
       AUTH_BASE_URL: http://auth:3100
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # SMTP for OTP email. REQUIRED in production: the auth service fails fast at startup if SMTP_HOST
+      # is unset, because email-OTP gates all sign-in and sign-up verification. Set these in your shell
+      # env or an .env file before `docker compose up`. Empty defaults mean "not configured" → fail fast.
+      NODE_ENV: production
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
