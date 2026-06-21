@@ -11,7 +11,7 @@ The only thing you need is **Docker** — no Node, no pnpm.
 ```bash
 git clone https://github.com/lagda-dev/lagda
 cd lagda
-docker compose up
+docker compose up   # or: make up
 ```
 
 That boots PostgreSQL, runs the migrations, seeds the first organization + owner, and
@@ -22,6 +22,11 @@ seeded owner:
 - **password:** `lagda-dev-owner`
 
 (Dev-only defaults — change them via the `SEED_OWNER_*` env vars; see [`docker/README.md`](./docker/README.md).)
+
+> **Email is required in production.** Sign-in and sign-up use an email one-time code, so a prod deploy
+> needs SMTP configured (`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, and `SMTP_USER`/`SMTP_PASSWORD` if your
+> relay needs auth) — the auth service refuses to start without it. See [`.env.example`](./.env.example).
+> Local dev needs none: the code is printed to the auth logs, and `owner@lagda.local` is always `123456`.
 
 ### What's running
 
@@ -70,20 +75,31 @@ TypeScript · Node.js · [Hono](https://hono.dev) · [Vite](https://vitejs.dev) 
 
 ## Development (contributing)
 
-Running the app doesn't need a toolchain — but **contributing** (hot-reload, tests, linting)
-does: **Node 20+** and **pnpm 9+**.
+Hot-reload development runs entirely in Docker — **no host Node or pnpm required**. The `Makefile`
+wraps the common commands (run `make` to list them all):
+
+```bash
+make dev          # full stack with live reload (or: docker compose -f docker-compose.dev.yml up)
+```
+
+This brings up Postgres, applies the schema, seeds the first org/owner, and starts all three apps
+with live reload: **web (Vite HMR) on http://localhost:5173**, server on :3000, auth on :3100. The
+SPA proxies `/api` → :3000 and `/api/auth` → :3100. Edit any file under `apps/` or `packages/` and the
+change reloads in the running container. Sign in as `owner@lagda.local` / `lagda-dev-owner`; the dev
+email-OTP is printed to the auth service logs:
+
+```bash
+make otp          # tail the auth logs to read the dev sign-in one-time code
+make dev-reset    # stop the dev stack and wipe its database
+```
+
+### Running the toolchain (tests, lint, types)
+
+The verification toolchain still uses **Node 20+** and **pnpm 9+** on the host:
 
 ```bash
 pnpm install
-pnpm dev          # hot-reload: web on :5173 (proxies the API/auth), plus the watch servers
 pnpm check        # full verification: lint + typecheck + test + build
-```
-
-`pnpm dev` serves the SPA from Vite on **http://localhost:5173** and proxies `/api` → :3000
-and `/api/auth` → :3100, so point it at a database first — the simplest is to leave
-`docker compose up` running and develop against it.
-
-```bash
 pnpm test         # run tests
 pnpm typecheck    # type check
 pnpm lint         # lint with oxlint

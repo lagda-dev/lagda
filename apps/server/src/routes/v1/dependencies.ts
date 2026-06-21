@@ -1,7 +1,7 @@
 import type { Permission, TokenScope } from "@lagda/auth-contract"
 import type { SyncRunOutcome } from "@lagda/observability"
 import type { TokenVerifier } from "../../middleware/authContext"
-import type { Repository, SyncEnqueuer } from "../../repositories/types"
+import type { Repository, SyncEnqueuer } from "../../repositories/repository"
 import { requirePermission } from "../../middleware/requirePermission"
 
 // Everything the v1 routes need to be wired without reaching for globals (§DI): the data-access

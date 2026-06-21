@@ -8,6 +8,11 @@
 #
 # SECURITY: the Postgres credentials and the seeded owner credentials below are DEV-ONLY defaults.
 # Override them via the environment (see docker/README.md) before any non-local deployment.
+#
+# The service-to-service URLs (DATABASE_URL, AUTH_BASE_URL, AUTH_JWKS_URL) are HARDCODED to the
+# compose-network service names — NOT ${DATABASE_URL:-...} — so a developer's local `.env` (which
+# points the host-run apps at localhost:5432) can never leak into these containers and break the
+# zero-config `docker compose up`. To target an external database, add a docker-compose.override.yml.
 
 x-postgres-credentials: &postgres-credentials
   POSTGRES_USER: ${POSTGRES_USER:-lagda}
@@ -43,8 +48,8 @@ services:
     image: lagda-tooling
     container_name: lagda-migrate
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgres://lagda:lagda@postgres:5432/lagda}
-      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://auth:3100}
+      DATABASE_URL: postgres://lagda:lagda@postgres:5432/lagda
+      AUTH_BASE_URL: http://auth:3100
     # App schema first (@lagda/db Kysely migrator), then the Better Auth schema (CLI migrate).
     command: >-
       sh -c "pnpm --filter @lagda/db migrate && pnpm --filter @lagda/auth run migrate:auth"
@@ -66,10 +71,20 @@ services:
     environment:
       PORT: "3100"
       # Auth uses the shared DATABASE_URL (no dedicated AUTH_DATABASE_URL in the zero-config path).
-      DATABASE_URL: ${DATABASE_URL:-postgres://lagda:lagda@postgres:5432/lagda}
+      DATABASE_URL: postgres://lagda:lagda@postgres:5432/lagda
       # AUTH_BASE_URL is the JWT issuer and the origin the server resolves its JWKS from (see below).
-      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://auth:3100}
+      AUTH_BASE_URL: http://auth:3100
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # SMTP for OTP email. REQUIRED in production: the auth service fails fast at startup if SMTP_HOST
+      # is unset, because email-OTP gates all sign-in and sign-up verification. Set these in your shell
+      # env or an .env file before `docker compose up`. Empty defaults mean "not configured" → fail fast.
+      NODE_ENV: production
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -95,8 +110,8 @@ services:
     image: lagda-tooling
     container_name: lagda-seed
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgres://lagda:lagda@postgres:5432/lagda}
-      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://auth:3100}
+      DATABASE_URL: postgres://lagda:lagda@postgres:5432/lagda
+      AUTH_BASE_URL: http://auth:3100
       # DEV-ONLY default owner credentials — override these before any real deployment.
       SEED_OWNER_EMAIL: ${SEED_OWNER_EMAIL:-owner@lagda.local}
       SEED_OWNER_PASSWORD: ${SEED_OWNER_PASSWORD:-lagda-dev-owner}
@@ -122,11 +137,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
-      DATABASE_URL: ${DATABASE_URL:-postgres://lagda:lagda@postgres:5432/lagda}
+      DATABASE_URL: postgres://lagda:lagda@postgres:5432/lagda
       # The resource server verifies bearer JWTs against the auth service's JWKS. Inside the compose
       # network the auth service is reachable by its service name `auth`, so the JWKS URL points there.
       # This is what makes a token minted by `auth` accepted by `server` (signature verified via JWKS).
-      AUTH_JWKS_URL: ${AUTH_JWKS_URL:-http://auth:3100/api/auth/jwks}
+      AUTH_JWKS_URL: http://auth:3100/api/auth/jwks
       LOG_LEVEL: ${LOG_LEVEL:-info}
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
       RATE_LIMIT_GLOBAL: ${RATE_LIMIT_GLOBAL:-120}

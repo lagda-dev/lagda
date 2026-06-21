@@ -1,8 +1,7 @@
 import { createHash, randomBytes } from "node:crypto"
 import { TOKEN_SCOPES } from "@lagda/auth-contract"
 import type { TokenScope } from "@lagda/auth-contract"
-import type { Role } from "@lagda/core"
-import { getErrorMessage } from "./getErrorMessage"
+import { getErrorMessage, type Role } from "@lagda/core"
 
 // Scoped, org-bound application tokens for the public REST API. They are minted ONLY by owners/admins
 // (§6), carry an explicit, non-empty set of scopes, and are stored HASHED — the plaintext secret is

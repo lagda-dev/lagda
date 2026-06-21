@@ -3,7 +3,7 @@
 import { telemetry } from "./telemetry"
 import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
-import { loadConfig } from "@lagda/core"
+import { getErrorMessage, loadConfig } from "@lagda/core"
 import { createDatabase } from "@lagda/db"
 import { createPgBossQueue } from "@lagda/jobs"
 import { createLogger } from "@lagda/logger"
@@ -40,6 +40,20 @@ if (isProduction) {
   app.get("*", serveStatic({ path: "./public/index.html" }))
 }
 
-serve({ fetch: app.fetch, port: config.PORT }, (info) => {
-  logger.info({ operation: "server.start", port: info.port, telemetryEnabled: telemetry.enabled })
+// pg-boss must be started before it can accept jobs: start() creates its schema and DB manager, so any
+// enqueue before it throws ("Cannot destructure property 'rows'…"). Start the queue, then serve, and
+// stop the queue on shutdown so in-flight handlers drain cleanly.
+const startServer = async (): Promise<void> => {
+  await queue.start()
+  serve({ fetch: app.fetch, port: config.PORT }, (info) => {
+    logger.info({ operation: "server.start", port: info.port, telemetryEnabled: telemetry.enabled })
+  })
+  process.on("SIGTERM", () => {
+    void queue.stop()
+  })
+}
+
+startServer().catch((error) => {
+  logger.error({ operation: "server.start_failed", reason: getErrorMessage(error) })
+  process.exitCode = 1
 })

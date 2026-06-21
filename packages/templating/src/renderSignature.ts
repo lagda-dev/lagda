@@ -1,5 +1,5 @@
 import mjml2html from "mjml"
-import { getErrorMessage } from "./getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import { interpolate } from "./interpolate"
 import type { RenderedSignature, SignatureVariables } from "./types"
 

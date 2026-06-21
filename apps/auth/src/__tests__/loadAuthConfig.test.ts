@@ -49,6 +49,33 @@ describe("loadAuthConfig", () => {
     expect(config.port).toBe(4000)
   })
 
+  it("leaves trustedOrigins undefined when TRUSTED_ORIGINS is unset", () => {
+    const env = { DATABASE_URL: "postgres://app-host/app" } as NodeJS.ProcessEnv
+
+    const config = loadAuthConfig(env)
+
+    expect(config.trustedOrigins).toBeUndefined()
+  })
+
+  it("parses a comma-separated TRUSTED_ORIGINS list, trimming blanks", () => {
+    const env = {
+      DATABASE_URL: "postgres://app-host/app",
+      TRUSTED_ORIGINS: "https://app.lagda.dev, https://admin.lagda.dev ,",
+    } as NodeJS.ProcessEnv
+
+    const config = loadAuthConfig(env)
+
+    expect(config.trustedOrigins).toEqual(["https://app.lagda.dev", "https://admin.lagda.dev"])
+  })
+
+  it("treats a blank TRUSTED_ORIGINS as unset", () => {
+    const env = { DATABASE_URL: "postgres://app-host/app", TRUSTED_ORIGINS: "  ,  " } as NodeJS.ProcessEnv
+
+    const config = loadAuthConfig(env)
+
+    expect(config.trustedOrigins).toBeUndefined()
+  })
+
   it("throws a descriptive error when no database URL is set", () => {
     const env = {} as NodeJS.ProcessEnv
 

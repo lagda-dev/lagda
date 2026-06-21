@@ -1,5 +1,5 @@
 import type { Context } from "hono"
-import { getErrorMessage } from "./getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import type { Metrics } from "./metrics"
 
 // The Prometheus scrape endpoint (lagda-conventions §9). Returns the registry's exposition text with

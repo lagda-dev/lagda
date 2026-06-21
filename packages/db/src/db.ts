@@ -1,7 +1,7 @@
 import { Kysely, PostgresDialect } from "kysely"
 import pg from "pg"
 import { POSTGRES_STATEMENT_TIMEOUT_MS, requireDatabaseUrl } from "./connection"
-import { getErrorMessage } from "./infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import type { Database } from "./schema"
 
 export type { Database } from "./schema"

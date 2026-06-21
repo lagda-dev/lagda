@@ -52,7 +52,7 @@ export const authClient = createAuthClient({
 })
 
 // Typed re-exports so feature code never reaches into the raw client surface.
-export const { signIn, signUp, signOut, useSession, getSession, organization } = authClient
+export const { signIn, signUp, signOut, useSession, getSession, organization, useActiveOrganization } = authClient
 
 // Send a sign-in OTP to the given email (the OTP-required step after email/password).
 export const sendOtp = (email: string) => authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" })
@@ -60,12 +60,31 @@ export const sendOtp = (email: string) => authClient.emailOtp.sendVerificationOt
 // Complete sign-in by exchanging the emailed OTP for a session.
 export const verifyOtp = (email: string, otp: string) => signIn.emailOtp({ email, otp })
 
+// --- Sign-up (self-service: a new account that owns a brand-new organization) ---
+
+// Create the account. Email verification is required, so this yields no usable session yet; the emailOTP
+// plugin sends an "email-verification" code on sign-up which the next step exchanges.
+export const signUpWithEmail = (params: { email: string; password: string; name: string }) => signUp.email(params)
+
+// (Re)send the sign-up email-verification OTP — used by the resend affordance on the verify step.
+export const sendSignupOtp = (email: string) => authClient.emailOtp.sendVerificationOtp({ email, type: "email-verification" })
+
+// Verify the account's email with the emailed code, marking it verified so sign-in can proceed.
+export const verifyEmailOtp = (email: string, otp: string) => authClient.emailOtp.verifyEmail({ email, otp })
+
+// Sign in with email + password (used right after verification to establish the new account's session).
+export const signInWithPassword = (email: string, password: string) => signIn.email({ email, password })
+
+// Create the caller's organization (they become its owner via creatorRole) and make it the active one,
+// so the session — and the bearer JWT minted from it — carry the org id + owner role.
+export const createOrganization = (params: { name: string; slug: string }) => organization.create(params)
+export const setActiveOrganization = (organizationId: string) => organization.setActive({ organizationId })
+
 // Fetch a fresh application JWT from the auth service and persist it for the app-server API client.
 // Returns the token string, or throws with context so callers surface the failure (no silent failure).
 export const fetchBearerToken = async (): Promise<string> => {
   const { data, error } = await authClient.token()
   if (error !== null) throw new Error(`Failed to obtain bearer token: ${error.message ?? "unknown error"}`)
   if (data === null) throw new Error("Failed to obtain bearer token: empty response")
-  storeBearerToken(data.token)
   return data.token
 }

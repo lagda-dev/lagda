@@ -1,7 +1,7 @@
 import type { Context } from "hono"
 import { buildApiError } from "../../infrastructure/errors"
 import type { ApiError, ApiErrorCode } from "../../infrastructure/errors"
-import { getErrorMessage } from "../../infrastructure/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import { paginationQuerySchema } from "../../infrastructure/pagination"
 import type { Page, PaginationQuery } from "../../infrastructure/pagination"
 import { AUTH_CONTEXT_KEY } from "../../middleware/authContext"
@@ -60,6 +60,49 @@ export const itemOutcome = async <TItem>(
     return ok(item)
   } catch (error) {
     return fail("internal_error", `Failed to read resource: ${getErrorMessage(error)}`)
+  }
+}
+
+// Run a create scoped to the caller's org. The validated body is mapped to the repository input by
+// the caller. A `null` result means a referenced parent (entity/template) is not in the caller's
+// tenant, which becomes a 404 so a forged foreign id cannot create rows in another org.
+export const createOutcome = async <TItem>(create: () => Promise<TItem | null>): Promise<Outcome<TItem>> => {
+  try {
+    const created = await create()
+    if (created === null) {
+      return fail("not_found", "Referenced resource not found")
+    }
+    return ok(created)
+  } catch (error) {
+    return fail("internal_error", `Failed to create resource: ${getErrorMessage(error)}`)
+  }
+}
+
+// Run an update scoped to the caller's org. The repository returns `null` when the resource is not in
+// the caller's tenant, which becomes a 404 envelope so one tenant cannot probe another's ids.
+export const updateOutcome = async <TItem>(update: () => Promise<TItem | null>): Promise<Outcome<TItem>> => {
+  try {
+    const updated = await update()
+    if (updated === null) {
+      return fail("not_found", "Resource not found")
+    }
+    return ok(updated)
+  } catch (error) {
+    return fail("internal_error", `Failed to update resource: ${getErrorMessage(error)}`)
+  }
+}
+
+// Run a delete scoped to the caller's org. The repository reports whether a row was removed; a miss
+// becomes a 404 so the response is honest, a hit becomes an empty `ok` the route renders as 204.
+export const deleteOutcome = async (remove: () => Promise<boolean>): Promise<Outcome<null>> => {
+  try {
+    const deleted = await remove()
+    if (!deleted) {
+      return fail("not_found", "Resource not found")
+    }
+    return ok(null)
+  } catch (error) {
+    return fail("internal_error", `Failed to delete resource: ${getErrorMessage(error)}`)
   }
 }
 

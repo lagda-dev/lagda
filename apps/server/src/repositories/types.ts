@@ -1,5 +1,3 @@
-import type { Page, PaginationQuery } from "../infrastructure/pagination"
-
 // The synchronization run lifecycle, mirrored from the `@lagda/db` schema's `SyncRunStatus`. Inlined
 // here (not imported) because the public API contract is the source of truth for the wire shape and
 // the db package does not re-export the literal union from its entry point.
@@ -101,38 +99,57 @@ export type CreateSyncRunInput = {
   createdBy: string
 }
 
-// --- The contract ---
-// Lists take a validated `PaginationQuery` and return a `Page`. Detail reads return `null` when the
-// resource does not exist (the handler translates that to a 404 envelope).
-export type Repository = {
-  listOrganizations: (orgId: string, query: PaginationQuery) => Promise<Page<OrganizationRecord>>
-  getOrganization: (orgId: string, id: string) => Promise<OrganizationRecord | null>
+// --- Write inputs (lean, API-facing) ---
+// Each write input carries the caller's `orgId` so the data layer can enforce tenant scoping (a
+// template/assignment is reachable only through an entity in the caller's org). `null` results from a
+// write mean "not found in this tenant" — the handler turns that into a 404.
 
-  listEntities: (orgId: string, query: PaginationQuery) => Promise<Page<EntityRecord>>
-  getEntity: (orgId: string, id: string) => Promise<EntityRecord | null>
-
-  listEmployees: (orgId: string, query: PaginationQuery) => Promise<Page<EmployeeRecord>>
-  getEmployee: (orgId: string, id: string) => Promise<EmployeeRecord | null>
-
-  listTemplates: (orgId: string, query: PaginationQuery) => Promise<Page<TemplateRecord>>
-  getTemplate: (orgId: string, id: string) => Promise<TemplateRecord | null>
-
-  listAssignments: (orgId: string, query: PaginationQuery) => Promise<Page<AssignmentRecord>>
-  getAssignment: (orgId: string, id: string) => Promise<AssignmentRecord | null>
-
-  listDepartments: (orgId: string, query: PaginationQuery) => Promise<Page<DepartmentRecord>>
-  listRoles: (orgId: string, query: PaginationQuery) => Promise<Page<RoleRecord>>
-  listAuditEvents: (orgId: string, query: PaginationQuery) => Promise<Page<AuditEventRecord>>
-
-  listSyncRuns: (orgId: string, query: PaginationQuery) => Promise<Page<SyncRunRecord>>
-  getSyncRun: (orgId: string, id: string) => Promise<SyncRunRecord | null>
-  createSyncRun: (input: CreateSyncRunInput) => Promise<SyncRunRecord>
-  cancelSyncRun: (orgId: string, id: string) => Promise<SyncRunRecord | null>
-  listDeployments: (orgId: string, syncRunId: string, query: PaginationQuery) => Promise<Page<DeploymentRecord>>
+// Create a template under an entity the caller's org owns. `mjmlSource` is the MJML body (§4).
+export type CreateTemplateInput = {
+  orgId: string
+  entityId: string
+  name: string
+  mjmlSource: string
 }
 
-// The job-enqueue surface a synchronization route needs. Injected so the route is decoupled from the
-// concrete pg-boss queue and unit-testable with a spy.
-export type SyncEnqueuer = {
-  enqueueDirectorySync: (input: { organizationId: string; entityId: string; syncRunId: string }) => Promise<void>
+// Patch a template's editable fields; only the provided fields change (immutable partial update).
+export type UpdateTemplateInput = {
+  orgId: string
+  id: string
+  name?: string
+  mjmlSource?: string
 }
+
+// Bind a template to a target audience under an entity the caller's org owns.
+export type CreateAssignmentInput = {
+  orgId: string
+  entityId: string
+  templateId: string
+  target: Record<string, unknown>
+}
+
+// Create an entity (brand/business unit) under the caller's org.
+export type CreateEntityInput = {
+  orgId: string
+  name: string
+  slug: string
+}
+
+// Patch an entity's editable fields; only the provided fields change.
+export type UpdateEntityInput = {
+  orgId: string
+  id: string
+  name?: string
+  slug?: string
+}
+
+// Patch the caller's own organization (settings/name). Scoped to `id === orgId` in the data layer so
+// one tenant cannot mutate another.
+export type UpdateOrganizationInput = {
+  orgId: string
+  id: string
+  name?: string
+}
+
+// The data-access API (`Repository`) and the job-enqueue contract (`SyncEnqueuer`) live in
+// `repository.ts` — this file holds only the record/input shapes those contracts are built from.

@@ -93,7 +93,7 @@ API-client packages (`db`, `connectors`, and the server's resource modules); `ui
 - **Backend:** Hono (`@hono/node-server`); serve SPA via `serve-static` in prod.
 - **Frontend:** Vite + React + **React Router**; data fetching via TanStack Query over the Hono RPC client.
 - **Styling:** Tailwind, **Tailwind-native**, via the shared preset in `packages/ui`. Do not introduce a second styling system.
-- **Components:** **shadcn/ui owned in `packages/ui`** (Radix + Tailwind + `cva`); `neutral` base, `new-york` style, **minimalist, neutral aesthetic** (neutral grays, near-black primary, 1px borders over shadows, small radius, Inter, generous whitespace). The SPA imports all UI from `packages/ui` — no duplicated primitives.
+- **Components:** **shadcn/ui owned in `packages/ui`** (Radix + Tailwind + `cva`); `neutral` base, `new-york` style, **minimalist, monochrome aesthetic** (cool-neutral grays, a single near-black ink, 1px borders over shadows, 8px radius, **Geist** for the interface and **Geist Mono** for data/metrics/identifiers, generous whitespace; **status colors — success/warning/destructive — are the only color in the system**). Fonts are self-hosted via Fontsource (no external CDN). The SPA imports all UI from `packages/ui` — no duplicated primitives.
 - **Data access:** **Kysely, no ORM. PostgreSQL only** — connection via `DATABASE_URL`; no other SQL dialect is supported (MySQL/SQLite are explicitly out of scope). Migrations via Kysely `Migrator`; regenerate the `Database` type with `kysely-codegen`. Never add an ORM.
 - **Validation:** Zod everywhere (see §4).
 - **Auth:** Better Auth in `apps/auth` only.
@@ -221,3 +221,37 @@ Code reads like a story; each function explains one part of it.
 8. Conventional commit; CLA signed; **a changeset included**.
 9. License headers/notices consistent with **AGPL-3.0**.
 10. Code style holds: `const`+arrow only, immutable, early returns, storytelling names, errors wrapped at source (§3).
+
+---
+
+## 15. Review-derived anti-patterns (must-avoid)
+
+These bug classes shipped (or nearly shipped) once and must never recur — scan every change
+against them before writing and before committing. Each is a _category_, not a single mistake.
+
+1. **Security/debug toggles FAIL CLOSED.** Never gate a dangerous affordance with a negative env
+   check (`NODE_ENV !== "production"`) — an unset/misspelled env then enables it in prod. Use a
+   positive opt-in flag and **throw at startup** if it is set under `NODE_ENV=production`.
+2. **Never log credentials or PII.** No OTP codes, tokens, passwords, or full emails in
+   logs/traces/metrics — redact **by default in every environment**, not only in production (§8).
+3. **No documented-but-unwired config.** If a comment/`.env.example`/doc promises an env knob, it
+   must actually be read, threaded through to where it is used, and covered by a test.
+4. **Authz claims come from the request's actual scope.** Derive org/tenant/role from the session's
+   **active** organization, never "first row"/a default. Always reason about the multi-org user (§6).
+5. **Guard state-machine transitions.** A status-changing `UPDATE` must constrain the current state
+   in its `WHERE` (re-assert it to survive races); return **409** on an invalid transition, **404**
+   when absent. Never blind-write over terminal/immutable rows.
+6. **Don't confuse id types.** Never pass one resource's id where another's is expected; resolve
+   explicitly. A comment must never claim a resolution/behavior the code does not actually perform.
+7. **Bound every input.** Every string/array gets a `.max(...)` at the Zod boundary, especially
+   anything fed to an expensive op (MJML compile, regex, crypto) — unbounded input is a DoS vector.
+8. **Crypto randomness + server-side uniqueness.** No `Math.random()` for slugs/ids/secrets; enforce
+   uniqueness with a DB constraint + retry. Order multi-step creates so a later failure cannot strand
+   earlier state (e.g. an account created but its org-create failing).
+9. **Rate-limit auth and write endpoints explicitly.** Cap OTP/login attempts and set per-IP limits
+   in code; do not rely on library defaults that are disabled outside production.
+10. **Don't clobber controlled UI state from async data.** A `useEffect` that reseeds form state on
+    every query-object identity change wipes in-progress edits on refetch — key on a stable id or
+    seed once.
+11. **Route responses through the shared error boundary.** Don't hand-roll `if (!res.ok) throw`
+    duplicating the shared `fetchJson`/`ApiError` helper; extend the helper (201/204) instead.

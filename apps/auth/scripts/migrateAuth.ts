@@ -1,6 +1,6 @@
 import { getMigrations } from "better-auth/db"
 import { auth } from "../better-auth.config"
-import { getErrorMessage } from "../src/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 
 // Applies the Better Auth schema (user, session, account, verification, jwks, organization, member,
 // invitation) to Postgres programmatically — running the migrations directly avoids the interactive

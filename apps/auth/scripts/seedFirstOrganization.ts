@@ -1,7 +1,8 @@
 import { Pool } from "pg"
 import { createAuth } from "../src/auth"
-import { getErrorMessage } from "../src/getErrorMessage"
+import { getErrorMessage } from "@lagda/core"
 import { loadAuthConfig } from "../src/loadAuthConfig"
+import { provisionAppOrganization } from "../src/provisionAppOrganization"
 
 // Zero-config first-run seed (Phase B, Wave 2). Creates the first organization and its owner user so a
 // fresh `docker compose up` lands on a usable instance with no manual setup. It is fully IDEMPOTENT:
@@ -91,6 +92,18 @@ const createFirstOrganization = async (auth: ReturnType<typeof createAuth>, cred
   }
 }
 
+// Mirror the Better Auth organization into the app's own `organizations` table using the SAME id (read
+// back from the auth `organization` row by slug), via the shared idempotent provisioner. The org-create
+// hook in auth.ts also provisions on create; this keeps the seed self-sufficient and both are idempotent.
+const provisionSeedAppOrganization = async (pool: Pool, credentials: SeedCredentials): Promise<void> => {
+  const found = await pool.query<{ id: string }>(`select id from "organization" where slug = $1 limit 1`, [credentials.organizationSlug])
+  const [organization] = found.rows
+  if (organization === undefined) {
+    throw new Error("Failed to provision the app organization: could not resolve the created organization id")
+  }
+  await provisionAppOrganization(pool, { id: organization.id, name: credentials.organizationName, slug: credentials.organizationSlug })
+}
+
 // Orchestrate the seed as a clean checklist: guard, create owner, verify owner, create the org.
 const seedFirstOrganization = async (): Promise<void> => {
   const config = loadAuthConfig()
@@ -107,6 +120,7 @@ const seedFirstOrganization = async (): Promise<void> => {
     await ensureOwnerAccount(auth, credentials)
     await markOwnerVerified(pool, credentials.ownerEmail)
     await createFirstOrganization(auth, credentials)
+    await provisionSeedAppOrganization(pool, credentials)
 
     process.stdout.write(`seed: created organization "${credentials.organizationName}" with owner ${credentials.ownerEmail}\n`)
   } finally {

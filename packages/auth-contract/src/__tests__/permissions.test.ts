@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { PERMISSIONS, ROLE_PERMISSIONS, TOKEN_SCOPES, hasPermission } from "../permissions"
+import { PERMISSIONS, ROLE_PERMISSIONS, TOKEN_SCOPES, hasPermission, scopesForRole } from "../permissions"
 import type { Permission } from "../permissions"
 
 const ALL_PERMISSIONS: readonly Permission[] = Object.values(PERMISSIONS)
@@ -94,5 +94,31 @@ describe("TOKEN_SCOPES", () => {
 
     // Assert
     expect(scopes).toEqual(["syncs:write", "syncs:read", "directory:read"])
+  })
+})
+
+describe("scopesForRole", () => {
+  it("gives the owner every scope, derived from RUN_SYNCS and MANAGE_DIRECTORY", () => {
+    // Arrange & Act
+    const ownerScopes = scopesForRole("owner")
+
+    // Assert
+    expect([...ownerScopes].sort()).toEqual(["directory:read", "syncs:read", "syncs:write"])
+  })
+
+  it("gives the admin the sync scopes but not directory (no MANAGE_DIRECTORY)", () => {
+    // Arrange & Act
+    const adminScopes = scopesForRole("admin")
+
+    // Assert
+    expect([...adminScopes].sort()).toEqual(["syncs:read", "syncs:write"])
+  })
+
+  it("gives a plain user no scopes", () => {
+    // Arrange & Act
+    const userScopes = scopesForRole("user")
+
+    // Assert
+    expect(userScopes).toEqual([])
   })
 })

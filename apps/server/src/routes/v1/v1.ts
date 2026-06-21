@@ -27,5 +27,8 @@ export const registerV1Routes = <S extends Schema>(app: OpenAPIHono<{ Variables:
   const withSynchronizations = registerSynchronizations(withAssignments, deps)
   const withDepartments = registerDepartments(withSynchronizations, deps)
   const withRoles = registerRoles(withDepartments, deps)
+  // TODO(wave-4+): register write routes for notification-channels, application-tokens,
+  // directory-connections, and users/members once those resources land (out of scope here; Slack
+  // notifications are deferred).
   return registerAuditEvents(withRoles, deps)
 }

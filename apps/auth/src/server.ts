@@ -7,11 +7,15 @@ import { createMetrics } from "@lagda/observability"
 import { createApp } from "./app"
 import { createAuth } from "./auth"
 import { loadAuthConfig } from "./loadAuthConfig"
+import { resolveOtpSender } from "./resolveOtpSender"
 
 const config = loadAuthConfig()
 const logger = createLogger({ name: "lagda-auth" })
 const metrics = createMetrics()
-const auth = createAuth({ databaseUrl: config.databaseUrl, baseUrl: config.baseUrl })
+// Resolve OTP delivery before building auth: this throws (fail fast) when running in production without
+// SMTP configured, so the instance never boots into a state where nobody can receive a sign-in code.
+const otpSender = resolveOtpSender()
+const auth = createAuth({ databaseUrl: config.databaseUrl, baseUrl: config.baseUrl, trustedOrigins: config.trustedOrigins, otpSender })
 const app = createApp(auth, { metrics, logger })
 
 serve({ fetch: app.fetch, port: config.port }, (info) => {

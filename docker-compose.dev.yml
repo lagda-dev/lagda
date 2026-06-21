@@ -1,0 +1,224 @@
+# Lagda — FULL dockerized dev stack with live reload. No host pnpm/node required:
+#
+#   docker compose -f docker-compose.dev.yml up        # everything, logs attached
+#   docker compose -f docker-compose.dev.yml up -d      # everything, detached
+#   docker compose -f docker-compose.dev.yml logs -f auth   # watch the OTP printed on sign-in (dev)
+#   docker compose -f docker-compose.dev.yml down       # stop
+#   docker compose -f docker-compose.dev.yml down -v    # stop + wipe the db AND the node_modules volumes
+#
+# Brings up, in order: Postgres -> migrations -> first-org/owner seed, plus the three long-running app
+# services with hot reload: web (Vite HMR :5173), server (tsx watch :3000), auth (tsx watch :3100).
+#
+# Live reload works because the whole repo is bind-mounted into each container, while every node_modules
+# is shadowed by an anonymous volume so the IMAGE's install (not the host, which may have none) is used.
+# Internal packages export TypeScript source directly, so editing any package live-reloads its consumers.
+#
+# Open http://localhost:5173. The dev seed creates owner@lagda.local / lagda-dev-owner; the email-OTP for
+# sign-in is printed to the `auth` service logs (dev only).
+#
+# Ports on the host:  web :5173  ·  server :3000  ·  auth :3100  ·  postgres :5432
+
+x-postgres-credentials: &postgres-credentials
+  POSTGRES_USER: ${POSTGRES_USER:-lagda}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lagda}
+  POSTGRES_DB: ${POSTGRES_DB:-lagda}
+
+# One shared dev image (install-only, includes dev deps) for every Node service in this stack.
+x-dev-build: &dev-build
+  build:
+    context: .
+    dockerfile: docker/dev.Dockerfile
+  image: lagda-dev
+
+# The whole repo is bind-mounted for live source, but every node_modules is shadowed by an anonymous
+# volume so the image's install survives the bind mount (the host may have no node_modules at all).
+x-dev-volumes: &dev-volumes
+  - ./:/repo
+  - /repo/node_modules
+  - /repo/apps/web/node_modules
+  - /repo/apps/server/node_modules
+  - /repo/apps/auth/node_modules
+  - /repo/packages/auth-contract/node_modules
+  - /repo/packages/integrations/node_modules
+  - /repo/packages/core/node_modules
+  - /repo/packages/db/node_modules
+  - /repo/packages/jobs/node_modules
+  - /repo/packages/logger/node_modules
+  - /repo/packages/observability/node_modules
+  - /repo/packages/templating/node_modules
+  - /repo/packages/ui/node_modules
+
+# Service-to-service URLs are hardcoded to the compose-network service names (NOT ${DATABASE_URL}) so a
+# developer's local .env — which points the host at localhost:5432 — can never leak into these containers.
+x-internal-database-url: &internal-database-url "postgres://lagda:lagda@postgres:5432/lagda"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: lagda-dev-postgres
+    restart: unless-stopped
+    environment: *postgres-credentials
+    volumes:
+      - lagda-dev-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lagda} -d ${POSTGRES_DB:-lagda}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lagda-dev
+
+  # One-shot: apply the app (Kysely) + Better Auth schemas, then exit. No fixed container_name: a one-shot
+  # lingers as an exited container, and a pinned name conflicts when the stack is recreated (e.g. a rebuild
+  # after a dependency change). Compose auto-names it instead, so recreate is always clean.
+  migrate:
+    <<: *dev-build
+    environment:
+      DATABASE_URL: *internal-database-url
+      AUTH_BASE_URL: http://auth:3100
+    volumes: *dev-volumes
+    command: >-
+      sh -c "pnpm --filter @lagda/db migrate && pnpm --filter @lagda/auth run migrate:auth"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - lagda-dev
+
+  # One-shot: create the first organization + owner (in-process Better Auth, no running auth needed).
+  # Idempotent — exits early if an organization already exists.
+  seed:
+    <<: *dev-build
+    environment:
+      DATABASE_URL: *internal-database-url
+      AUTH_BASE_URL: http://auth:3100
+      SEED_OWNER_EMAIL: ${SEED_OWNER_EMAIL:-owner@lagda.local}
+      SEED_OWNER_PASSWORD: ${SEED_OWNER_PASSWORD:-lagda-dev-owner}
+      SEED_OWNER_NAME: ${SEED_OWNER_NAME:-Lagda Owner}
+      SEED_ORGANIZATION_NAME: ${SEED_ORGANIZATION_NAME:-Lagda}
+      SEED_ORGANIZATION_SLUG: ${SEED_ORGANIZATION_SLUG:-lagda}
+    volumes: *dev-volumes
+    command: ["pnpm", "--filter", "@lagda/auth", "run", "seed"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+    networks:
+      - lagda-dev
+
+  # Dev SMTP catcher: accepts the OTP emails the auth service sends and shows them in a web UI. Nothing
+  # leaves your machine. SMTP on :1025 (auth points here), web UI on http://localhost:8025. Mailpit is a
+  # maintained, multi-arch (native arm64 + amd64) drop-in for MailHog, so it runs without emulation on
+  # Apple Silicon.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: lagda-dev-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    networks:
+      - lagda-dev
+
+  # Long-running: the identity & token service, hot-reloaded with `tsx watch`.
+  auth:
+    <<: *dev-build
+    container_name: lagda-dev-auth
+    working_dir: /repo/apps/auth
+    environment:
+      NODE_ENV: development
+      PORT: "3100"
+      DATABASE_URL: *internal-database-url
+      AUTH_BASE_URL: http://localhost:3100
+      # Opt in to the local dev OTP affordance: the seeded owner (owner@lagda.local) gets the fixed code
+      # 123456 so the common case needs no inbox. This flag is fail-closed — the auth service refuses to
+      # start if it is ever set under NODE_ENV=production (see isDevOtpEnabled).
+      AUTH_DEV_FIXED_OTP: "true"
+      # Deliver OTP email to Mailpit (the dev SMTP catcher below) so sign-up/sign-in emails are viewable
+      # at http://localhost:8025 instead of just the logs. Mailpit needs no credentials. Override to a real relay.
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_FROM: ${SMTP_FROM:-Lagda (dev) <no-reply@lagda.local>}
+      # tsx watch relies on chokidar; polling is required for bind-mount edits to be seen in Docker.
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "300"
+    volumes: *dev-volumes
+    command: ["pnpm", "exec", "tsx", "watch", "src/server.ts"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+    ports:
+      - "${AUTH_PORT:-3100}:3100"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3100/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s
+    networks:
+      - lagda-dev
+
+  # Long-running: the application/resource server, hot-reloaded with `tsx watch`.
+  server:
+    <<: *dev-build
+    container_name: lagda-dev-server
+    working_dir: /repo/apps/server
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      DATABASE_URL: *internal-database-url
+      # Verify bearer JWTs against the auth service's JWKS, reachable by service name on the dev network.
+      AUTH_JWKS_URL: http://auth:3100/api/auth/jwks
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "300"
+    volumes: *dev-volumes
+    command: ["pnpm", "exec", "tsx", "watch", "src/server.ts"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      auth:
+        condition: service_started
+    ports:
+      - "${SERVER_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s
+    networks:
+      - lagda-dev
+
+  # Long-running: the SPA dev server (Vite HMR). The proxy targets the auth/server SERVICES (not
+  # localhost) via the env-driven vite.config; file watching polls (VITE_USE_POLLING) for Docker.
+  web:
+    <<: *dev-build
+    container_name: lagda-dev-web
+    working_dir: /repo/apps/web
+    environment:
+      AUTH_PROXY_TARGET: http://auth:3100
+      SERVER_PROXY_TARGET: http://server:3000
+      VITE_USE_POLLING: "true"
+    volumes: *dev-volumes
+    command: ["pnpm", "exec", "vite", "--host"]
+    depends_on:
+      auth:
+        condition: service_started
+      server:
+        condition: service_started
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    networks:
+      - lagda-dev
+
+volumes:
+  lagda-dev-postgres-data:
+
+networks:
+  lagda-dev:
+    driver: bridge

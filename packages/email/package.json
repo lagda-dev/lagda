@@ -1,0 +1,27 @@
+{
+  "name": "@lagda/email",
+  "version": "0.1.0",
+  "description": "Lagda reusable transactional email — SMTP (nodemailer) mailer, dev logging mailer, and env-driven assembly",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/email.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@lagda/core": "workspace:*",
+    "nodemailer": "^6.9.16",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^6.4.16",
+    "@vitest/coverage-v8": "^1.6.0",
+    "typescript": "^5.6.0",
+    "vitest": "^1.6.0"
+  }
+}
