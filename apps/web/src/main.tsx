@@ -10,6 +10,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import { RequireAuth } from "./auth/RequireAuth"
 import { RequireRole } from "./auth/RequireRole"
 import { AppShell } from "./components/AppShell"
+import { ApplicationTokensPage } from "./pages/ApplicationTokensPage"
 import { AssignmentsPage } from "./pages/AssignmentsPage"
 import { AuditEventsPage } from "./pages/AuditEventsPage"
 import { DashboardPage } from "./pages/DashboardPage"
@@ -57,6 +58,10 @@ const router = createBrowserRouter([
           {
             element: <RequireRole permission={PERMISSIONS.MANAGE_ENTITIES} />,
             children: [{ path: "/entities", element: <EntitiesPage /> }],
+          },
+          {
+            element: <RequireRole permission={PERMISSIONS.MANAGE_TOKENS} />,
+            children: [{ path: "/application-tokens", element: <ApplicationTokensPage /> }],
           },
           {
             element: <RequireRole permission={PERMISSIONS.MANAGE_ORG} />,
