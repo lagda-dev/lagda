@@ -1,9 +1,10 @@
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from "@lagda/ui"
+import { Button, Input, Label } from "@lagda/ui"
 import type { FormEvent } from "react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { createOrganization, sendSignupOtp, setActiveOrganization, signInWithPassword, signUpWithEmail, verifyEmailOtp } from "../../auth/authClient"
 import { toOrgSlug } from "../../auth/orgSlug"
+import { AuthLayout } from "../../components/AuthLayout"
 
 // Self-service sign-up: create an account that OWNS a brand-new organization. Two steps in one screen —
 // (1) collect name/email/password/company and create the account (email-verification OTP is sent), then
@@ -87,91 +88,87 @@ export const SignUpPage = () => {
     void verifyAndProvision()
   }
 
+  if (step === "verify") {
+    return (
+      <AuthLayout title="Verify your email" description={`We sent a one-time code to ${email}.`}>
+        <form className="space-y-4" onSubmit={handleVerifySubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="otp">Verification code</Label>
+            <Input
+              id="otp"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="123456"
+              className="text-center font-mono tracking-[0.5em]"
+              required
+              value={otp}
+              onChange={(event) => setOtp(event.target.value)}
+            />
+          </div>
+          {errorMessage !== null && (
+            <p role="alert" className="text-sm text-destructive">
+              {errorMessage}
+            </p>
+          )}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Setting up…" : "Verify and continue"}
+          </Button>
+          <Button type="button" variant="ghost" className="w-full" onClick={() => void resendCode()}>
+            Resend code
+          </Button>
+        </form>
+      </AuthLayout>
+    )
+  }
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-6">
-      <Card className="w-full">
-        {step === "details" ? (
-          <>
-            <CardHeader>
-              <CardTitle>Create your Lagda account</CardTitle>
-              <CardDescription>Set up a new organization — you'll be its owner.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4" onSubmit={handleDetailsSubmit}>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Your name</Label>
-                  <Input id="name" autoComplete="name" required value={name} onChange={(event) => setName(event.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="organization">Company name</Label>
-                  <Input
-                    id="organization"
-                    autoComplete="organization"
-                    required
-                    value={organizationName}
-                    onChange={(event) => setOrganizationName(event.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                  />
-                </div>
-                {errorMessage !== null && (
-                  <p role="alert" className="text-sm text-destructive">
-                    {errorMessage}
-                  </p>
-                )}
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating account…" : "Create account"}
-                </Button>
-              </form>
-              <p className="mt-4 text-center text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link to="/login" className="underline underline-offset-4">
-                  Sign in
-                </Link>
-              </p>
-            </CardContent>
-          </>
-        ) : (
-          <>
-            <CardHeader>
-              <CardTitle>Verify your email</CardTitle>
-              <CardDescription>We sent a one-time code to {email}.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4" onSubmit={handleVerifySubmit}>
-                <div className="space-y-2">
-                  <Label htmlFor="otp">Verification code</Label>
-                  <Input id="otp" inputMode="numeric" autoComplete="one-time-code" required value={otp} onChange={(event) => setOtp(event.target.value)} />
-                </div>
-                {errorMessage !== null && (
-                  <p role="alert" className="text-sm text-destructive">
-                    {errorMessage}
-                  </p>
-                )}
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Setting up…" : "Verify and continue"}
-                </Button>
-                <Button type="button" variant="outline" className="w-full" onClick={() => void resendCode()}>
-                  Resend code
-                </Button>
-              </form>
-            </CardContent>
-          </>
+    <AuthLayout title="Create your account" description="Set up a new organization — you'll be its owner.">
+      <form className="space-y-4" onSubmit={handleDetailsSubmit}>
+        <div className="space-y-2">
+          <Label htmlFor="name">Your name</Label>
+          <Input id="name" autoComplete="name" required value={name} onChange={(event) => setName(event.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="organization">Company name</Label>
+          <Input
+            id="organization"
+            autoComplete="organization"
+            required
+            value={organizationName}
+            onChange={(event) => setOrganizationName(event.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Work email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input id="password" type="password" autoComplete="new-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
+        </div>
+        {errorMessage !== null && (
+          <p role="alert" className="text-sm text-destructive">
+            {errorMessage}
+          </p>
         )}
-      </Card>
-    </main>
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Creating account…" : "Create account"}
+        </Button>
+      </form>
+      <p className="mt-5 text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Link to="/login" className="text-foreground underline underline-offset-4">
+          Sign in
+        </Link>
+      </p>
+    </AuthLayout>
   )
 }

@@ -1,8 +1,9 @@
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from "@lagda/ui"
+import { Button, Input, Label } from "@lagda/ui"
 import type { FormEvent } from "react"
 import { useState } from "react"
 import { Navigate, useLocation, useNavigate } from "react-router-dom"
 import { fetchBearerToken, sendOtp, verifyOtp } from "../../auth/authClient"
+import { AuthLayout } from "../../components/AuthLayout"
 
 // Step two of the OTP-required sign-in: exchange the emailed code for a session, then proactively mint
 // the application bearer JWT so the first authenticated app-server call already has a token in hand.
@@ -56,32 +57,33 @@ export const VerifyOtpPage = () => {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-6">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Enter your code</CardTitle>
-          <CardDescription>{`We sent a one-time code to ${email}.`}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="otp">Verification code</Label>
-              <Input id="otp" inputMode="numeric" autoComplete="one-time-code" required value={otp} onChange={(event) => setOtp(event.target.value)} />
-            </div>
-            {errorMessage !== null && (
-              <p role="alert" className="text-sm text-destructive">
-                {errorMessage}
-              </p>
-            )}
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Verifying…" : "Verify and sign in"}
-            </Button>
-            <Button type="button" variant="ghost" className="w-full" onClick={() => void resendCode()}>
-              Resend code
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </main>
+    <AuthLayout title="Enter your code" description={`We sent a one-time code to ${email}.`}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <div className="space-y-2">
+          <Label htmlFor="otp">Verification code</Label>
+          <Input
+            id="otp"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="123456"
+            className="text-center font-mono tracking-[0.5em]"
+            required
+            value={otp}
+            onChange={(event) => setOtp(event.target.value)}
+          />
+        </div>
+        {errorMessage !== null && (
+          <p role="alert" className="text-sm text-destructive">
+            {errorMessage}
+          </p>
+        )}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Verifying…" : "Verify and sign in"}
+        </Button>
+        <Button type="button" variant="ghost" className="w-full" onClick={() => void resendCode()}>
+          Resend code
+        </Button>
+      </form>
+    </AuthLayout>
   )
 }
