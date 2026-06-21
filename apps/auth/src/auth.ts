@@ -7,6 +7,7 @@ import { createOtpGenerator } from "./otpGenerator"
 import { createLoggingOtpSender } from "./otpSender"
 import type { OtpSender } from "./otpSender"
 import { provisionAppOrganization } from "./provisionAppOrganization"
+import { activeOrganizationIdOf, resolveActiveMembership } from "./resolveActiveMembership"
 
 // The auth service owns its OWN Postgres schema (Better Auth migrations), separate from @lagda/db.
 // It prefers a dedicated AUTH_DATABASE_URL so the identity store can live apart from the app data,
@@ -27,17 +28,17 @@ const ORGANIZATION_CREATOR_ROLE = "owner" as const
 // Defaults cover local dev (Vite :5173) and the prod-served SPA (:3000); override via TRUSTED_ORIGINS.
 const DEFAULT_TRUSTED_ORIGINS = ["http://localhost:5173", "http://localhost:3000"]
 
-// Resolve the caller's first organization membership + role, mapping Better Auth's `member` to our
-// `user`. Used to enrich the JWT so the resource server can authorize (it needs orgId + role).
-const resolveActiveMembership = async (database: Pool, userId: string): Promise<{ organizationId: string | null; role: string | null }> => {
-  const result = await database.query<{ organizationId: string; role: string }>(
-    'select "organizationId", role from "member" where "userId" = $1 order by "createdAt" asc limit 1',
-    [userId],
-  )
-  const [row] = result.rows
-  if (row === undefined) return { organizationId: null, role: null }
-  return { organizationId: row.organizationId, role: row.role === "member" ? "user" : row.role }
-}
+// Rate-limit windows (seconds) and ceilings. The defaults guard normal app traffic; the OTP send and
+// verify endpoints are far tighter to resist brute-forcing a 6-digit code and OTP-send flooding (§4).
+const RATE_LIMIT_WINDOW_SECONDS = 60
+const RATE_LIMIT_DEFAULT_MAX = 30
+const OTP_SEND_MAX_PER_WINDOW = 3
+const OTP_VERIFY_MAX_PER_WINDOW = 5
+// One OTP code may be guessed at most this many times before it is invalidated (defence in depth on top
+// of the per-IP rate limit above), and it lives only this long.
+const OTP_ALLOWED_ATTEMPTS = 3
+const OTP_LENGTH = 6
+const OTP_EXPIRES_IN_SECONDS = 5 * 60
 
 // Build the Better Auth instance — the sole token authority. Email/password sign-in plus a REQUIRED
 // email-OTP step, sessions, organizations with owner/admin/member roles, JWT issuance with a JWKS
@@ -50,6 +51,21 @@ export const createAuth = ({ databaseUrl, baseUrl, trustedOrigins = DEFAULT_TRUS
     // Trust the auth service's own origin plus the SPA origins so cross-origin sign-in is accepted.
     trustedOrigins: [...new Set([baseUrl, ...trustedOrigins])],
     database,
+    // Rate limiting on every route (§4). Better Auth enables this only in production by default; we turn
+    // it on in every environment so staging is protected too, and clamp the OTP send/verify and sign-up
+    // endpoints hard to resist brute-force and account-flooding. Memory storage is per-instance, which is
+    // acceptable for now (TODO: switch to "database" storage if the auth service is horizontally scaled).
+    rateLimit: {
+      enabled: true,
+      window: RATE_LIMIT_WINDOW_SECONDS,
+      max: RATE_LIMIT_DEFAULT_MAX,
+      customRules: {
+        "/email-otp/send-verification-otp": { window: RATE_LIMIT_WINDOW_SECONDS, max: OTP_SEND_MAX_PER_WINDOW },
+        "/sign-in/email-otp": { window: RATE_LIMIT_WINDOW_SECONDS, max: OTP_VERIFY_MAX_PER_WINDOW },
+        "/email-otp/verify-email": { window: RATE_LIMIT_WINDOW_SECONDS, max: OTP_VERIFY_MAX_PER_WINDOW },
+        "/sign-up/email": { window: RATE_LIMIT_WINDOW_SECONDS, max: OTP_VERIFY_MAX_PER_WINDOW },
+      },
+    },
     // Email verification is REQUIRED: a freshly signed-up account cannot authenticate until it has
     // proven control of its inbox via the email-OTP flow below. This is the OTP-required invariant.
     emailAndPassword: {
@@ -86,8 +102,14 @@ export const createAuth = ({ databaseUrl, baseUrl, trustedOrigins = DEFAULT_TRUS
       // delegated to the injected sender so transport stays a boundary concern (TODO: real email).
       emailOTP({
         sendVerificationOnSignUp: true,
-        // Dev affordance only: the seeded owner test account gets a fixed, well-known code so local
-        // sign-in needs no log scraping; every other account (and all of production) gets a random one.
+        // Bound the code's lifetime and how many times it may be guessed before it is invalidated, so a
+        // 6-digit code is not brute-forceable within its validity window (defence in depth with the
+        // per-IP rate limit above, §4/§6).
+        otpLength: OTP_LENGTH,
+        expiresIn: OTP_EXPIRES_IN_SECONDS,
+        allowedAttempts: OTP_ALLOWED_ATTEMPTS,
+        // Dev affordance only: when AUTH_DEV_FIXED_OTP is opted in (never in production), the seeded owner
+        // gets a fixed code so local sign-in needs no log scraping; everyone else gets a random one.
         generateOTP: createOtpGenerator(),
         sendVerificationOTP: async ({ email, otp, type }) => {
           try {
@@ -119,8 +141,8 @@ export const createAuth = ({ databaseUrl, baseUrl, trustedOrigins = DEFAULT_TRUS
       // empty for human sessions (role-based access); application tokens carry scopes instead.
       jwt({
         jwt: {
-          definePayload: async ({ user }) => {
-            const { organizationId, role } = await resolveActiveMembership(database, user.id)
+          definePayload: async ({ user, session }) => {
+            const { organizationId, role } = await resolveActiveMembership(database, user.id, activeOrganizationIdOf(session))
             // The session JWT carries the scopes the role implies, so the resource server's scope gate
             // (which also guards machine application tokens) lets a human on the SPA call scoped routes.
             const scopes = role === null ? [] : scopesForRole(role as Role)
