@@ -10,7 +10,14 @@ export default defineConfig({
     globals: true,
     coverage: {
       provider: "v8",
-      include: ["src/applicationTokens.ts", "src/otpSender.ts", "src/getErrorMessage.ts", "src/loadAuthConfig.ts"],
+      include: [
+        "src/applicationTokens.ts",
+        "src/otpSender.ts",
+        "src/otpGenerator.ts",
+        "src/provisionAppOrganization.ts",
+        "src/getErrorMessage.ts",
+        "src/loadAuthConfig.ts",
+      ],
       exclude: ["src/auth.ts", "src/app.ts", "src/server.ts", "src/**/*.test.ts"],
       thresholds: {
         lines: 90,

@@ -4,8 +4,10 @@ import { betterAuth } from "better-auth"
 import { bearer, emailOTP, jwt, organization } from "better-auth/plugins"
 import { Pool } from "pg"
 import { getErrorMessage } from "./getErrorMessage"
+import { createOtpGenerator } from "./otpGenerator"
 import { createLoggingOtpSender } from "./otpSender"
 import type { OtpSender } from "./otpSender"
+import { provisionAppOrganization } from "./provisionAppOrganization"
 
 // The auth service owns its OWN Postgres schema (Better Auth migrations), separate from @lagda/db.
 // It prefers a dedicated AUTH_DATABASE_URL so the identity store can live apart from the app data,
@@ -85,6 +87,9 @@ export const createAuth = ({ databaseUrl, baseUrl, trustedOrigins = DEFAULT_TRUS
       // delegated to the injected sender so transport stays a boundary concern (TODO: real email).
       emailOTP({
         sendVerificationOnSignUp: true,
+        // Dev affordance only: the seeded owner test account gets a fixed, well-known code so local
+        // sign-in needs no log scraping; every other account (and all of production) gets a random one.
+        generateOTP: createOtpGenerator(),
         sendVerificationOTP: async ({ email, otp, type }) => {
           try {
             await otpSender({ email, otp, type })
@@ -93,9 +98,21 @@ export const createAuth = ({ databaseUrl, baseUrl, trustedOrigins = DEFAULT_TRUS
           }
         },
       }),
-      // Organizations with the owner/admin/member role model; the creator is always the owner.
+      // Organizations with the owner/admin/member role model; the creator is always the owner. When a
+      // user signs up and creates their organization, mirror it into the app schema (same id) with a
+      // default entity, so the brand-new owner lands on a usable instance — the same provisioning the
+      // first-run seed does, but driven by the UI sign-up flow.
       organization({
         creatorRole: ORGANIZATION_CREATOR_ROLE,
+        organizationCreation: {
+          afterCreate: async ({ organization: createdOrganization }) => {
+            await provisionAppOrganization(database, {
+              id: createdOrganization.id,
+              name: createdOrganization.name,
+              slug: createdOrganization.slug,
+            })
+          },
+        },
       }),
       // JWT issuance + the well-known JWKS endpoint the resource server verifies bearer tokens against.
       // The resource server (apps/server) authorizes on @lagda/auth-contract claims — sub, orgId, role,
