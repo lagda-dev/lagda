@@ -11,7 +11,6 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: [
-        "src/applicationTokens.ts",
         "src/otpSender.ts",
         "src/otpGenerator.ts",
         "src/otpEmailSender.ts",

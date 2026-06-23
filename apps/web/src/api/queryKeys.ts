@@ -55,4 +55,8 @@ export const queryKeys = {
     all: ["audit-events"] as const,
     list: (filters?: ListFilters) => listKey("audit-events", filters),
   },
+  applicationTokens: {
+    all: ["application-tokens"] as const,
+    list: (filters?: ListFilters) => listKey("application-tokens", filters),
+  },
 } as const

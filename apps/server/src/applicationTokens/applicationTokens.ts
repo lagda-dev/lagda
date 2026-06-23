@@ -1,14 +1,12 @@
 import { createHash, randomBytes } from "node:crypto"
+import { getErrorMessage } from "@lagda/core"
 import { TOKEN_SCOPES } from "@lagda/auth-contract"
 import type { TokenScope } from "@lagda/auth-contract"
-import { getErrorMessage, type Role } from "@lagda/core"
 
-// Scoped, org-bound application tokens for the public REST API. They are minted ONLY by owners/admins
-// (§6), carry an explicit, non-empty set of scopes, and are stored HASHED — the plaintext secret is
-// shown exactly once at mint time and never persisted.
-
-// Only owners and admins may mint, list, or revoke application tokens. A plain user is denied.
-const TOKEN_MANAGING_ROLES: readonly Role[] = ["owner", "admin"] as const
+// Scoped, org-bound application tokens for the public REST API (§4). They carry an explicit, non-empty
+// set of scopes and are stored HASHED — the plaintext secret is shown exactly once at mint time and
+// never persisted. Authorization (owner/admin) is enforced ONCE at the route guard
+// (`guard(MANAGE_TOKENS)`); these functions assume the caller is already authorized.
 
 const TOKEN_BYTE_LENGTH = 32
 const TOKEN_PREFIX = "lagda_at_"
@@ -42,8 +40,7 @@ export type ApplicationTokenStore = {
   markRevoked: (id: string, organizationId: string, revokedAt: Date) => Promise<ApplicationTokenRecord | null>
 }
 
-// Guard the mint/list/revoke authorization explicitly: deny by default, allow only owner/admin.
-export const canManageApplicationTokens = (role: Role): boolean => TOKEN_MANAGING_ROLES.includes(role)
+const isKnownScope = (scope: string): scope is TokenScope => (TOKEN_SCOPES as readonly string[]).includes(scope)
 
 // Validate that every requested scope is a known scope and that at least one was requested.
 export const validateScopes = (scopes: readonly string[]): readonly TokenScope[] => {
@@ -57,32 +54,25 @@ export const validateScopes = (scopes: readonly string[]): readonly TokenScope[]
   return scopes as readonly TokenScope[]
 }
 
-const isKnownScope = (scope: string): scope is TokenScope => (TOKEN_SCOPES as readonly string[]).includes(scope)
-
 // Hash a token secret for storage. SHA-256 is sufficient for a high-entropy random secret (no salt
-// needed for 256-bit randomness), and lets the resource path do a constant-shape lookup by hash.
+// needed for 256-bit randomness), and lets the future verification path do a constant-shape lookup by hash.
 export const hashToken = (plaintext: string): string => createHash("sha256").update(plaintext).digest("hex")
 
 // Generate a high-entropy, prefixed secret so leaked tokens are recognizable in logs/scanners.
 export const generateTokenSecret = (): string => `${TOKEN_PREFIX}${randomBytes(TOKEN_BYTE_LENGTH).toString("base64url")}`
 
-// Mint a new application token. Authorization is enforced FIRST (deny-by-default), then scopes are
-// validated, then a hashed record is persisted and the one-time plaintext is returned to the caller.
+// Mint a new application token: validate scopes, persist a hashed record, and return the one-time
+// plaintext to the caller. Authorization is the route guard's responsibility (not re-checked here).
 export const mintApplicationToken =
   (store: ApplicationTokenStore) =>
-  async (actorRole: Role, input: MintApplicationTokenInput): Promise<MintedApplicationToken> => {
-    if (!canManageApplicationTokens(actorRole)) {
-      throw new Error("Forbidden: only owners and admins may mint application tokens")
-    }
-
-    const { organizationId, name, scopes } = input
-    const validatedScopes = validateScopes(scopes)
+  async (input: MintApplicationTokenInput): Promise<MintedApplicationToken> => {
+    const validatedScopes = validateScopes(input.scopes)
     const plaintext = generateTokenSecret()
 
     const record: ApplicationTokenRecord = {
       id: randomBytes(16).toString("hex"),
-      organizationId,
-      name,
+      organizationId: input.organizationId,
+      name: input.name,
       scopes: validatedScopes,
       hashedToken: hashToken(plaintext),
       createdAt: new Date(),
@@ -98,14 +88,11 @@ export const mintApplicationToken =
     return { record, plaintext }
   }
 
-// List the org's application tokens (owner/admin only). Hashed secrets stay in the records; callers
-// must never surface `hashedToken` to clients.
+// List the org's application tokens. Hashed secrets stay in the records; the route must never surface
+// `hashedToken` to clients.
 export const listApplicationTokens =
   (store: ApplicationTokenStore) =>
-  async (actorRole: Role, organizationId: string): Promise<readonly ApplicationTokenRecord[]> => {
-    if (!canManageApplicationTokens(actorRole)) {
-      throw new Error("Forbidden: only owners and admins may list application tokens")
-    }
+  async (organizationId: string): Promise<readonly ApplicationTokenRecord[]> => {
     try {
       return await store.listByOrganization(organizationId)
     } catch (error) {
@@ -113,26 +100,13 @@ export const listApplicationTokens =
     }
   }
 
-// Revoke an application token (owner/admin only). Revocation is org-bound so a caller can never revoke
-// a token belonging to another organization.
+// Revoke an application token, org-bound so a caller can never revoke another organization's token.
 export const revokeApplicationToken =
   (store: ApplicationTokenStore) =>
-  async (actorRole: Role, organizationId: string, tokenId: string): Promise<ApplicationTokenRecord> => {
-    if (!canManageApplicationTokens(actorRole)) {
-      throw new Error("Forbidden: only owners and admins may revoke application tokens")
+  async (organizationId: string, tokenId: string): Promise<ApplicationTokenRecord | null> => {
+    try {
+      return await store.markRevoked(tokenId, organizationId, new Date())
+    } catch (error) {
+      throw new Error(`Failed to revoke application token: ${getErrorMessage(error)}`)
     }
-    const revoked = await revokeOrThrow(store, organizationId, tokenId)
-    return revoked
   }
-
-const revokeOrThrow = async (store: ApplicationTokenStore, organizationId: string, tokenId: string): Promise<ApplicationTokenRecord> => {
-  try {
-    const revoked = await store.markRevoked(tokenId, organizationId, new Date())
-    if (!revoked) {
-      throw new Error(`Application token not found: ${tokenId}`)
-    }
-    return revoked
-  } catch (error) {
-    throw new Error(`Failed to revoke application token: ${getErrorMessage(error)}`)
-  }
-}

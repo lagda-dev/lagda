@@ -114,6 +114,18 @@ export type DirectoryConnectionsTable = {
   updated_at: UpdatedAt
 }
 
+export type ApplicationTokensTable = {
+  // Text id minted in app code (authoritative), not a DB-generated uuid.
+  id: string
+  org_id: string
+  name: string
+  scopes: JSONColumnType<string[]>
+  hashed_token: string
+  created_at: CreatedAt
+  // Null until revoked; the revoke path writes the timestamp.
+  revoked_at: ColumnType<Date | null, never, Date>
+}
+
 export type Database = {
   organizations: OrganizationsTable
   entities: EntitiesTable
@@ -125,4 +137,5 @@ export type Database = {
   audit_log: AuditLogTable
   notification_channels: NotificationChannelsTable
   directory_connections: DirectoryConnectionsTable
+  application_tokens: ApplicationTokensTable
 }

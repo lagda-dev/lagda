@@ -12,7 +12,17 @@ describe("navItemsForRole", () => {
     const labels = navItemsForRole(role).map((item) => item.label)
 
     // Assert
-    expect(labels).toEqual(["Dashboard", "Templates", "Assignments", "Synchronizations", "Employees", "Entities", "Audit events", "Settings"])
+    expect(labels).toEqual([
+      "Dashboard",
+      "Templates",
+      "Assignments",
+      "Synchronizations",
+      "Employees",
+      "Entities",
+      "Application tokens",
+      "Audit events",
+      "Settings",
+    ])
   })
 
   it("restricts a user to the surfaces their role unlocks", () => {
@@ -26,6 +36,7 @@ describe("navItemsForRole", () => {
     expect(labels).toEqual(["Dashboard"])
     expect(labels).not.toContain("Settings")
     expect(labels).not.toContain("Templates")
+    expect(labels).not.toContain("Application tokens")
   })
 
   it("gives admin templates/assignments/employees but not owner-only areas", () => {
@@ -40,6 +51,7 @@ describe("navItemsForRole", () => {
     expect(labels).toContain("Assignments")
     expect(labels).toContain("Synchronizations")
     expect(labels).toContain("Employees")
+    expect(labels).toContain("Application tokens")
     expect(labels).not.toContain("Settings")
     expect(labels).not.toContain("Entities")
   })

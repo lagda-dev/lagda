@@ -12,6 +12,7 @@ import { createApp } from "./app"
 import { createGlobalRateLimit, loadRateLimitConfig } from "./infrastructure/rateLimit"
 import { createJwksVerifier, resolveJwksUrl } from "./middleware/jwksVerifier"
 import { createKyselyRepository, createQueueEnqueuer } from "./repositories/kyselyRepository"
+import { createApplicationTokenStore } from "./repositories/applicationTokens/applicationTokensRepository"
 
 // Production wiring (excluded from coverage): resolve config, build the structured logger and the
 // Prometheus registry, the real data-access repository (feeding DB-query timings into the metrics),
@@ -28,6 +29,7 @@ const app = createApp(
   {
     repository: createKyselyRepository(database, metrics.recordDbQuery),
     enqueuer: createQueueEnqueuer(queue),
+    applicationTokenStore: createApplicationTokenStore(database),
     verifyToken: createJwksVerifier(resolveJwksUrl()),
     recordSyncRun: metrics.recordSyncRun,
   },

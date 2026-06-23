@@ -25,8 +25,8 @@ export type AppNavGroup = {
 const SECTION_ORDER: readonly NavSection[] = ["Overview", "Signatures", "Directory", "Organization"] as const
 
 // Only routes that exist today are listed — adding a nav item with no route 404s. The remaining
-// screens (My signature, Directory, Members, Tokens) ship in later PRs; add the nav item alongside its
-// route then. (TODO: restore those items as their pages land.)
+// screens (My signature, Directory connections, Members) ship in later PRs; add the nav item alongside
+// its route then. (TODO: restore those items as their pages land.)
 const NAV_CATALOGUE: readonly AppNavItem[] = [
   { label: "Dashboard", href: "/", section: "Overview", permission: PERMISSIONS.VIEW_OWN_SIGNATURE },
   { label: "Templates", href: "/templates", section: "Signatures", permission: PERMISSIONS.MANAGE_TEMPLATES },
@@ -34,6 +34,7 @@ const NAV_CATALOGUE: readonly AppNavItem[] = [
   { label: "Synchronizations", href: "/synchronizations", section: "Signatures", permission: PERMISSIONS.RUN_SYNCS },
   { label: "Employees", href: "/employees", section: "Directory", permission: PERMISSIONS.READ_EMPLOYEES },
   { label: "Entities", href: "/entities", section: "Directory", permission: PERMISSIONS.MANAGE_ENTITIES },
+  { label: "Application tokens", href: "/application-tokens", section: "Organization", permission: PERMISSIONS.MANAGE_TOKENS },
   { label: "Audit events", href: "/audit-events", section: "Organization", permission: PERMISSIONS.MANAGE_ORG },
   { label: "Settings", href: "/settings", section: "Organization", permission: PERMISSIONS.MANAGE_ORG },
 ] as const
